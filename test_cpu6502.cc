@@ -1,3 +1,7 @@
+/*
+ *  Source code written by Gabriel Correia
+*/
+
 #include <memory>
 #include <iostream>
 

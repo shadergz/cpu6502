@@ -1,4 +1,8 @@
-﻿#include <iostream>
+/*
+ *  Source code written by Gabriel Correia
+*/
+
+#include <iostream>
 #include <cassert>
 
 #include "cpu6502.hh"
@@ -223,8 +227,8 @@ void cpu6502::write_memory16 ()
 
 /*
  * Operation: A + M + C -> A, C
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	+	-	-	+
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   +   -   -   +
  */
 
 uint8_t cpu6502::cpu_adc ()
@@ -242,8 +246,8 @@ uint8_t cpu6502::cpu_adc ()
 
 /*
  * Operation: A AND M -> A
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_and ()
@@ -258,8 +262,8 @@ uint8_t cpu6502::cpu_and ()
 
 /*
  * Operation: C <- [76543210] <- 0
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	+	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   +   -   -   -
 */
 
 uint8_t cpu6502::cpu_asl ()
@@ -278,8 +282,8 @@ uint8_t cpu6502::cpu_asl ()
 
 /*
  * Operation: branch on C = 0
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_bcc ()
@@ -292,8 +296,8 @@ uint8_t cpu6502::cpu_bcc ()
 
 /*
  * Operation: branch on C = 1
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_bcs ()
@@ -306,8 +310,8 @@ uint8_t cpu6502::cpu_bcs ()
 
 /*
  * Operation: branch on Z = 1
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_beq ()
@@ -320,8 +324,8 @@ uint8_t cpu6502::cpu_beq ()
 
 /*
  * Operation: A AND M, M7->N, M6->V
- * Affected flags:	N	Z	C	I	D	V
-                    M7	+	-	-	-	M6
+ * Affected flags:  N   Z   C   I   D   V
+                    M7  +   -   -   -   M6
 */
 
 uint8_t cpu6502::cpu_bit ()
@@ -341,8 +345,8 @@ uint8_t cpu6502::cpu_bit ()
 
 /*
  * Operation: branch on N = 1
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_bmi ()
@@ -355,8 +359,8 @@ uint8_t cpu6502::cpu_bmi ()
 
 /*
  * Operation: branch on Z = 0
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_bne ()
@@ -369,8 +373,8 @@ uint8_t cpu6502::cpu_bne ()
 
 /*
  * Operation: branch on N = 0
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_bpl ()
@@ -383,8 +387,8 @@ uint8_t cpu6502::cpu_bpl ()
 
 /*
  * Operation: interrupt, push PC+2, push SR 
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	1	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   1   -   -
 */
 
 uint8_t cpu6502::cpu_brk ()
@@ -404,8 +408,8 @@ uint8_t cpu6502::cpu_brk ()
 
 /*
  * Operation: branch on V = 0
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_bvc ()
@@ -418,8 +422,8 @@ uint8_t cpu6502::cpu_bvc ()
 
 /*
  * Operation: branch on V = 1
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_bvs ()
@@ -432,8 +436,8 @@ uint8_t cpu6502::cpu_bvs ()
 
 /*
  * Operation: 0 -> C
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	0	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   0   -   -   -
 */
 
 uint8_t cpu6502::cpu_clc ()
@@ -444,8 +448,8 @@ uint8_t cpu6502::cpu_clc ()
 
 /*
  * Operation: 0 -> D
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	0	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   0   -
 */
 
 uint8_t cpu6502::cpu_cld ()
@@ -456,8 +460,8 @@ uint8_t cpu6502::cpu_cld ()
 
 /*
  * Operation: 0 -> I
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	0	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   0   -   -
 */
 
 uint8_t cpu6502::cpu_cli ()
@@ -468,8 +472,8 @@ uint8_t cpu6502::cpu_cli ()
 
 /*
  * Operation: 0 -> V
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	0
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   0
 */
 
 uint8_t cpu6502::cpu_clv ()
@@ -480,8 +484,8 @@ uint8_t cpu6502::cpu_clv ()
 
 /*
  * Operation: A - M
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	+	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   +   -   -   -
 */
 
 /*
@@ -509,8 +513,8 @@ uint8_t cpu6502::cpu_cmp ()
 
 /*
  * Operation: X - M
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	+	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   +   -   -   -
 */
 
 uint8_t cpu6502::cpu_cpx ()
@@ -526,8 +530,8 @@ uint8_t cpu6502::cpu_cpx ()
 
 /*
  * Operation: Y - M
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	+	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   +   -   -   -
 */
 
 uint8_t cpu6502::cpu_cpy ()
@@ -543,8 +547,8 @@ uint8_t cpu6502::cpu_cpy ()
 
 /*
  * Operation: M - 1 -> M
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_dec ()
@@ -559,8 +563,8 @@ uint8_t cpu6502::cpu_dec ()
 
 /*
  * Operation: X - 1 -> X
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_dex ()
@@ -573,8 +577,8 @@ uint8_t cpu6502::cpu_dex ()
 
 /*
  * Operation: Y - 1 -> Y
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_dey ()
@@ -587,8 +591,8 @@ uint8_t cpu6502::cpu_dey ()
 
 /*
  * Operation: A EOR M -> A
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_eor ()
@@ -602,8 +606,8 @@ uint8_t cpu6502::cpu_eor ()
 
 /*
  * Operation: M + 1 -> M
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_inc ()
@@ -618,8 +622,8 @@ uint8_t cpu6502::cpu_inc ()
 
 /*
  * Operation: X + 1 -> X
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_inx ()
@@ -632,8 +636,8 @@ uint8_t cpu6502::cpu_inx ()
 
 /*
  * Operation: Y + 1 -> Y
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_iny ()
@@ -647,8 +651,8 @@ uint8_t cpu6502::cpu_iny ()
 /*
  * Operation: (PC+1) -> PCL
               (PC+2) -> PCH
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_jmp ()
@@ -662,8 +666,8 @@ uint8_t cpu6502::cpu_jmp ()
  * Operation: push (PC+2),
               (PC+1) -> PCL
               (PC+2) -> PCH
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_jsr ()
@@ -677,8 +681,8 @@ uint8_t cpu6502::cpu_jsr ()
 
 /*
  * Operation: M -> A
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_lda ()
@@ -693,8 +697,8 @@ uint8_t cpu6502::cpu_lda ()
 
 /*
  * Operation: M -> X
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_ldx ()
@@ -708,8 +712,8 @@ uint8_t cpu6502::cpu_ldx ()
 
 /*
  * Operation: M -> Y
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_ldy ()
@@ -724,8 +728,8 @@ uint8_t cpu6502::cpu_ldy ()
 
 /*
  * Operation: 0 -> [76543210] <- C
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	+	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   +   -   -   -
 */
 
 uint8_t cpu6502::cpu_lsr ()
@@ -751,8 +755,8 @@ uint8_t cpu6502::cpu_lsr ()
 
 /*
  * Operation: ___
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_nop ()
@@ -762,8 +766,8 @@ uint8_t cpu6502::cpu_nop ()
 
 /*
  * Operation: A OR M -> A
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_ora ()
@@ -778,8 +782,8 @@ uint8_t cpu6502::cpu_ora ()
 
 /*
  * Operation: push a 
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_pha ()
@@ -791,8 +795,8 @@ uint8_t cpu6502::cpu_pha ()
 
 /*
  * Operation: push SR
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_php ()
@@ -807,8 +811,8 @@ uint8_t cpu6502::cpu_php ()
 
 /*
  * Operation: pull A
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_pla ()
@@ -823,8 +827,8 @@ uint8_t cpu6502::cpu_pla ()
 
 /*
  * Operation: pull SR
- * Affected flags:	N	Z	C	I	D	V
-                           from stack
+ * Affected flags:  N   Z   C   I   D   V
+                        from stack
 */
 
 uint8_t cpu6502::cpu_plp ()
@@ -837,8 +841,8 @@ uint8_t cpu6502::cpu_plp ()
 
 /*
  * Operation: C <- [76543210] <- C
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	+	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   +   -   -   -
 */
 
 uint8_t cpu6502::cpu_rol ()
@@ -852,7 +856,7 @@ uint8_t cpu6502::cpu_rol ()
     /* 1001010 << 1 == 10010100 */
     value |= (result >> 8) & 1;
     /* 1001010 
-     *		 1 |=
+     *       1 |=
      * 0010101
     */
 
@@ -868,8 +872,8 @@ uint8_t cpu6502::cpu_rol ()
 
 /*
  * Operation: C -> [76543210] -> C
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	+	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   +   -   -   -
 */
 
 uint8_t cpu6502::cpu_ror ()
@@ -891,8 +895,8 @@ uint8_t cpu6502::cpu_ror ()
 
 /*
  * Operation: pull SR, pull PC
- * Affected flags:	N	Z	C	I	D	V
-                         from stack
+ * Affected flags:  N   Z   C   I   D   V
+                        from stack
 */
 
 uint8_t cpu6502::cpu_rti ()
@@ -907,8 +911,8 @@ uint8_t cpu6502::cpu_rti ()
 
 /*
  * Operation: pull PC, PC+1 -> PC
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_rts ()
@@ -921,8 +925,8 @@ uint8_t cpu6502::cpu_rts ()
 
 /*
  * Operation: A - M - C -> A
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	+	-	-	+
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   +   -   -   +
 */
 
 uint8_t cpu6502::cpu_sbc ()
@@ -946,8 +950,8 @@ uint8_t cpu6502::cpu_sbc ()
 
 /*
  * Operation: 1 -> C
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	1	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   1   -   -   -
 */
 
 uint8_t cpu6502::cpu_sec ()
@@ -958,8 +962,8 @@ uint8_t cpu6502::cpu_sec ()
 
 /*
  * Operation: 1 -> D
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	1	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   1   -
 */
 
 uint8_t cpu6502::cpu_sed ()
@@ -970,8 +974,8 @@ uint8_t cpu6502::cpu_sed ()
 
 /*
  * Operation: 1 -> I
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	1	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   1   -   -
 */
 
 uint8_t cpu6502::cpu_sei ()
@@ -982,8 +986,8 @@ uint8_t cpu6502::cpu_sei ()
 
 /*
  * Operation: A -> M
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_sta ()
@@ -995,8 +999,8 @@ uint8_t cpu6502::cpu_sta ()
 
 /*
  * Operation: X -> M
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_stx ()
@@ -1008,8 +1012,8 @@ uint8_t cpu6502::cpu_stx ()
 
 /*
  * Operation: Y -> M
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_sty ()
@@ -1021,8 +1025,8 @@ uint8_t cpu6502::cpu_sty ()
 
 /*
  * Operation: A -> X
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_tax ()
@@ -1035,8 +1039,8 @@ uint8_t cpu6502::cpu_tax ()
 
 /*
  * Operation: A -> Y
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_tay ()
@@ -1049,8 +1053,8 @@ uint8_t cpu6502::cpu_tay ()
 
 /*
  * Operation: SP -> X
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_tsx ()
@@ -1063,8 +1067,8 @@ uint8_t cpu6502::cpu_tsx ()
 
 /*
  * Operation: X -> A
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_txa ()
@@ -1077,8 +1081,8 @@ uint8_t cpu6502::cpu_txa ()
 
 /*
  * Operation: X -> SP
- * Affected flags:	N	Z	C	I	D	V
-                    -	-	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    -   -   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_txs ()
@@ -1089,8 +1093,8 @@ uint8_t cpu6502::cpu_txs ()
 
 /*
  * Operation: Y -> A
- * Affected flags:	N	Z	C	I	D	V
-                    +	+	-	-	-	-
+ * Affected flags:  N   Z   C   I   D   V
+                    +   +   -   -   -   -
 */
 
 uint8_t cpu6502::cpu_tya ()

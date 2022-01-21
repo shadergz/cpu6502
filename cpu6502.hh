@@ -1,4 +1,8 @@
-﻿#pragma once
+/*
+ *  Source code written by Gabriel Correia
+*/
+
+#pragma once
 
 #include <array>
 #include <cstdint>
@@ -45,7 +49,6 @@ constexpr uint16_t INTERRUPT_VECTOR_TABLE[5][2] = {
     [0x0000]
 */
 
-
 typedef uint8_t (*cpu_read) (uint16_t);
 typedef void (*cpu_write) (uint16_t, uint8_t);
 
@@ -81,8 +84,8 @@ public:
 private:
     /* Fetch helper functions */
 
-    /*	This variable will be used to read and write into the memory (a read operation will store the result
-     *	in 2 bytes, a write operation will perform a AND with 0x00ff and a cast for uint8_t before wrote the data)
+    /*  This variable will be used to read and write into the memory (a read operation will store the result
+     *  in 2 bytes, a write operation will perform a AND with 0x00ff and a cast for uint8_t before wrote the data)
     */
     uint16_t m_data{};
     uint16_t m_address{};
@@ -186,8 +189,8 @@ private:
     /* All cycles wasted will be stored into this variable */
     uint64_t m_cycles_wasted{};
 
-    /*	A specif flag to determine if the instruction will use the accumulator register 
-     *	to retrieve the operand or not
+    /*  A specif flag to determine if the instruction will use the accumulator register 
+     *  to retrieve the operand or not
     */
     bool m_use_accumulator{};
 
@@ -300,8 +303,6 @@ private:
         {}, {}, {},
         {&isa::cpu_ora,		&isa::mem_zp,		3, 0, 2}
     }};
-
-
 #pragma endregion "Opcode table"
 };
 
