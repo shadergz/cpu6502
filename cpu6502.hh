@@ -29,11 +29,11 @@ constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
 enum class ivt_index {ABORT = 0, COP, IRQ_BRK, NMI, RESET};
 
 constexpr uint16_t INTERRUPT_VECTOR_TABLE[5][2] = {
-  {0xfff8, 0xfff9},
-  {0xfff4, 0xfff5},
-  {0xfffe, 0xffff},
-  {0xfffa, 0xfffb},
-  {0xfffc, 0xfffd}
+    {0xfff8, 0xfff9},
+    {0xfff4, 0xfff5},
+    {0xfffe, 0xffff},
+    {0xfffa, 0xfffb},
+    {0xfffc, 0xfffd}
 };
 
 /*
@@ -300,11 +300,12 @@ private:
     } opcode_info_t;
 
     using isa = cpu6502;
+    
     std::array<opcode_info_t, 7> const m_cpu_isa {{
-        {&isa::cpu_brk,		&isa::mem_impl,		7, 0, 1},
-        {&isa::cpu_ora,		&isa::mem_indx,		6, 0, 2},
+        {&isa::cpu_brk, &isa::mem_impl, 7, 0, 1},
+        {&isa::cpu_ora, &isa::mem_indx, 6, 0, 2},
         {}, {}, {},
-        {&isa::cpu_ora,		&isa::mem_zp,		3, 0, 2}
+        {&isa::cpu_ora, &isa::mem_zp,   3, 0, 2}
     }};
 #pragma endregion "Opcode table"
 };
