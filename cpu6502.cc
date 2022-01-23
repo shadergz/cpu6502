@@ -116,9 +116,9 @@ std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &exe
 /* Display the internal CPU state */
 void cpu6502::printcs ()
 {
-    fmt::print ("6502 microprocessor informations:\nPC = {:#x} : STACK POINTER: {:#x}\n", m_pc, (uint16_t) m_s | 0x100);
-    fmt::print ("CPU register:\nA = {:#x} : X = {:#x} : Y = {:#x}\n", m_a, m_x, m_y);
-    fmt::print ("CPU RS:\nCARRY = {}\n", getflag (flags::CARRY));
+    fmt::print ("6502 microprocessor informations:\nPC = {:#x}, STACK POINTER = {:#x}\n", m_pc, (uint16_t) m_s | 0x100);
+    fmt::print ("CPU register:\nA = {:#x}, X = {:#x}, Y = {:#x}\n", m_a, m_x, m_y);
+    fmt::print ("CPU status:\nCarry = {}\n", getflag (flags::CARRY));
 
 }
 
@@ -360,7 +360,7 @@ uint8_t cpu6502::cpu_bmi ()
     return extra_cycles;
 }
 
-/* Take the branch if the zero flag is setted to 1 */
+/* Take the branch if the zero flag is setted to 0 */
 uint8_t cpu6502::cpu_bne ()
 {
     uint16_t branch_address;
@@ -394,7 +394,7 @@ uint8_t cpu6502::cpu_bpl ()
     return extra_cycles;
 }
 
-/*  Generate a interrupt just like the hardware IRQ, the actual flag and the  program counter is pushed 
+/*  Generate a interrupt just like the hardware IRQ, the actual flag and the program counter is pushed 
  *  to the stack setted to the next location (PC + 2)
  */
 uint8_t cpu6502::cpu_brk ()
@@ -675,7 +675,10 @@ uint8_t cpu6502::cpu_nop ()
 uint8_t cpu6502::cpu_ora ()
 {
     read_memory8 ();
+    
+    /* TODO: Maybe the page can cross */
     m_data |= m_a;
+
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
     setflag (flags::ZERO, CHECK_ZERO (m_data));
 

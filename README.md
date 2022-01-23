@@ -28,7 +28,9 @@ The default processor status after the reset signal:
 
 ```cc
 /* The status flag after the reset signal */
+/* CARRY = 1, ZERO = 1, IRQ = 1, DECIMAL = 0, BRK = 1, RESERVED = 1, OVERFLOW = 1, NEGATIVE = 1 */
 constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
+
 ```
 
 ## How to build the test program
