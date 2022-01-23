@@ -100,7 +100,7 @@ std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &exe
             m_cycles_wasted += cycles_used;
             consumed_bytes += current_instruction->bytes_consumed;
 
-            /* Ensure that the CPU will not perform more cycles that is requested */
+            /* Ensuring that the CPU hasn't performed more cycles that has been requested */
             assert (cycles_used <= cycles_count);
             cycles_count -= cycles_used;
         }
@@ -113,6 +113,7 @@ std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &exe
     return {executed, consumed_bytes};
 }
 
+/* Display the internal CPU state */
 void cpu6502::printcs ()
 {
     fmt::print ("6502 microprocessor informations:\nPC = {:#x} : STACK POINTER: {:#x}\n", m_pc, (uint16_t) m_s | 0x100);
@@ -143,6 +144,7 @@ bool cpu6502::getflag (flags flag) const
     }
 }
 
+/* Macros used inside the CPU operations */
 #define CHECK_CARRY(x, y)\
     ((uint16_t)x + y) & 0xff00 ? 1 : 0
 #define CHECK_ZERO(x)\
@@ -153,6 +155,7 @@ bool cpu6502::getflag (flags flag) const
 #define CHECK_OVERFLOW(x, y, z)\
     (((x ^ y) & 0x80) & ~(x ^ z))
 
+/* Control flags manipulation */
 void cpu6502::setflag (flags flag, bool status)
 {
     switch (flag) {
@@ -182,6 +185,7 @@ void cpu6502::setflag (flags flag, bool status)
     }
 }
 
+/* Read memory operations */
 void cpu6502::read_memory8 ()
 {
 #if USE_6502_CALLBACKS
@@ -203,6 +207,7 @@ void cpu6502::read_memory16 ()
     m_data |= (uint16_t)(low << 8);
 }
 
+/* Write memory operations */
 void cpu6502::write_memory8 ()
 {
     /* You can't write t the read only memory */
@@ -225,12 +230,7 @@ void cpu6502::write_memory16 ()
 
 #pragma region
 
-/*
- * Operation: A + M + C -> A, C
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   +   -   -   +
- */
-
+/* Add to the register A, a memory value and the carry flag */
 uint8_t cpu6502::cpu_adc ()
 {
     uint16_t result;
@@ -246,12 +246,9 @@ uint8_t cpu6502::cpu_adc ()
     return 0;
 }
 
-/*
- * Operation: A AND M -> A
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
+/*  Perform a bitwise AND operation with a memory value and the register
+ *  A, and store the result back into A register
 */
-
 uint8_t cpu6502::cpu_and ()
 {
     read_memory8 ();
@@ -262,12 +259,7 @@ uint8_t cpu6502::cpu_and ()
     return 0;
 }
 
-/*
- * Operation: C <- [76543210] <- 0
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   +   -   -   -
-*/
-
+/* Perform a shift left operation */
 uint8_t cpu6502::cpu_asl ()
 {
     read_memory8 ();
@@ -282,26 +274,24 @@ uint8_t cpu6502::cpu_asl ()
     return 0;
 }
 
-/*
- * Operation: branch on C = 0
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Take the branch if the carry flag is setted to 0 */
 uint8_t cpu6502::cpu_bcc ()
 {
+    uint16_t branch_address;
+    uint8_t extra_cycles = 1;
+
     read_memory8 ();
-    if (!getflag (flags::CARRY))
-        m_pc += m_data;
-    return 0;
+    if (!getflag (flags::CARRY)) {
+        branch_address = m_pc + m_data;
+        if (page_crossed (branch_address, m_pc))
+            extra_cycles++;
+
+        m_pc = branch_address;
+    }
+    return extra_cycles;
 }
 
-/*
- * Operation: branch on C = 1
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Take the branch if the carry flag is setted to 1 */
 uint8_t cpu6502::cpu_bcs ()
 {
     uint16_t branch_address;
@@ -318,12 +308,7 @@ uint8_t cpu6502::cpu_bcs ()
     return extra_cycles;
 }
 
-/*
- * Operation: branch on Z = 1
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Take the branch if the zero flag is setted to 1 */
 uint8_t cpu6502::cpu_beq ()
 {
     uint16_t branch_address;
@@ -340,12 +325,9 @@ uint8_t cpu6502::cpu_beq ()
     return extra_cycles;
 }
 
-/*
- * Operation: A AND M, M7->N, M6->V
- * Affected flags:  N   Z   C   I   D   V
-                    M7  +   -   -   -   M6
+/*  Perform a bit check, the msb (7th bit) is deslocated to the negative flag, and the 
+ *  6th bit is deslocated to the overflow flag
 */
-
 uint8_t cpu6502::cpu_bit ()
 {
 #define CPU_BIT_OVER(x)\
@@ -361,12 +343,7 @@ uint8_t cpu6502::cpu_bit ()
 #undef CPU_BIT_OVER
 }
 
-/*
- * Operation: branch on N = 1
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Take the branch if the negative flag is setted to 1 */
 uint8_t cpu6502::cpu_bmi ()
 {
     uint16_t branch_address;
@@ -383,12 +360,7 @@ uint8_t cpu6502::cpu_bmi ()
     return extra_cycles;
 }
 
-/*
- * Operation: branch on Z = 0
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Take the branch if the zero flag is setted to 1 */
 uint8_t cpu6502::cpu_bne ()
 {
     uint16_t branch_address;
@@ -405,12 +377,7 @@ uint8_t cpu6502::cpu_bne ()
     return extra_cycles;
 }
 
-/*
- * Operation: branch on N = 0
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Take the branch if the negative flag is setted to 0 */
 uint8_t cpu6502::cpu_bpl ()
 {
     uint16_t branch_address;
@@ -427,12 +394,9 @@ uint8_t cpu6502::cpu_bpl ()
     return extra_cycles;
 }
 
-/*
- * Operation: interrupt, push PC+2, push SR 
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   1   -   -
-*/
-
+/*  Generate a interrupt just like the hardware IRQ, the actual flag and the  program counter is pushed 
+ *  to the stack setted to the next location (PC + 2)
+ */
 uint8_t cpu6502::cpu_brk ()
 {
     /* A extra byte is added to provide a reason for the break */
@@ -443,107 +407,89 @@ uint8_t cpu6502::cpu_brk ()
     m_data = m_s;
     push8 ();
     setflag (flags::BRK, false);
+
+    /* Disable the interrupt flag (The CPU need to handler this interrupt before accept another IRQ) */
     setflag (flags::IRQ, true);
 
     return 0;
 }
 
-/*
- * Operation: branch on V = 0
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Take the branch if the overflow flag is setted to 1 */
 uint8_t cpu6502::cpu_bvc ()
 {
+    uint16_t branch_address;
+    uint8_t extra_cycles = 1;
+
     read_memory8 ();
-    if (!getflag (flags::OVER_FLOW))
-        m_pc += m_data;
-    return 0;
+    if (!getflag (flags::OVER_FLOW)) {
+        branch_address = m_pc + m_data;
+        if (page_crossed (branch_address, m_pc))
+            extra_cycles++;
+            
+        m_pc = branch_address;
+    }
+    return extra_cycles;
 }
 
-/*
- * Operation: branch on V = 1
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Take the branch if the overflow flag is setted to 1 */
 uint8_t cpu6502::cpu_bvs ()
 {
+    uint16_t branch_address;
+    uint8_t extra_cycles = 1;
+
     read_memory8 ();
-    if (getflag (flags::OVER_FLOW))
-        m_pc += m_data;
-    return 0;
+    if (getflag (flags::OVER_FLOW)) {
+        branch_address = m_pc + m_data;
+        if (page_crossed (branch_address, m_pc))
+            extra_cycles++;
+            
+        m_pc = branch_address;
+    }
+    return extra_cycles;
 }
 
-/*
- * Operation: 0 -> C
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   0   -   -   -
-*/
-
+/* Clean the carry flag */
 uint8_t cpu6502::cpu_clc ()
 {
     setflag (flags::CARRY, false);
     return 0;
 }
 
-/*
- * Operation: 0 -> D
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   0   -
-*/
-
+/* Clean the decimal flag */
 uint8_t cpu6502::cpu_cld ()
 {
     setflag (flags::DECIMAL, false);
     return 0;
 }
 
-/*
- * Operation: 0 -> I
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   0   -   -
-*/
-
+/* Clean the interrupt flag */
 uint8_t cpu6502::cpu_cli ()
 {
     setflag (flags::IRQ, false);
     return 0;
 }
 
-/*
- * Operation: 0 -> V
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   0
-*/
-
+/* Clean the overflow flag */
 uint8_t cpu6502::cpu_clv ()
 {
     setflag (flags::OVER_FLOW, false);
     return 0;
 }
 
+/* Compare a memory value with the A register */
 /*
- * Operation: A - M
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   +   -   -   -
+    Compare Result          N	Z	C
+    A, X, or Y < Memory     *   0   0
+    A, X, or Y = Memory     0   1   1
+    A, X, or Y > Memory     *   0   1
 */
-
-/*
-    Compare Result			N	Z	C
-    A, X, or Y < Memory 	*	0	0
-    A, X, or Y = Memory 	0	1	1
-    A, X, or Y > Memory 	*	0	1
-*/
-
 uint8_t cpu6502::cpu_cmp ()
 {
     read_memory8 ();
     /*
-        IF VALUE > 0    ->    REG < MEMORY
-        IF VALUE == 0	->    REG == MEMORY
-        IF VALUE < 0	->    REG > MEMORY
+        IF VALUE >  0    ->  REG < MEMORY
+        IF VALUE == 0   ->  REG == MEMORY
+        IF VALUE <  0    ->  REG > MEMORY
     */
     auto value = ((uint8_t)m_data) - m_a;
 
@@ -553,12 +499,7 @@ uint8_t cpu6502::cpu_cmp ()
     return 0;
 }
 
-/*
- * Operation: X - M
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   +   -   -   -
-*/
-
+/* Compare a memory value with the X index register */
 uint8_t cpu6502::cpu_cpx ()
 {
     read_memory8 ();
@@ -570,12 +511,7 @@ uint8_t cpu6502::cpu_cpx ()
     return 0;
 }
 
-/*
- * Operation: Y - M
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   +   -   -   -
-*/
-
+/* Compare a memory value with the Y index register */
 uint8_t cpu6502::cpu_cpy ()
 {
     read_memory8 ();
@@ -587,12 +523,7 @@ uint8_t cpu6502::cpu_cpy ()
     return 0;
 }
 
-/*
- * Operation: M - 1 -> M
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Decrement a memory value */
 uint8_t cpu6502::cpu_dec ()
 {
     read_memory8 ();
@@ -603,12 +534,7 @@ uint8_t cpu6502::cpu_dec ()
     return 0;
 }
 
-/*
- * Operation: X - 1 -> X
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Decrement the X index register */
 uint8_t cpu6502::cpu_dex ()
 {
     m_x--;
@@ -617,12 +543,7 @@ uint8_t cpu6502::cpu_dex ()
     return 0;
 }
 
-/*
- * Operation: Y - 1 -> Y
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Decrement the Y index register */
 uint8_t cpu6502::cpu_dey ()
 {
     m_y--;
@@ -631,12 +552,9 @@ uint8_t cpu6502::cpu_dey ()
     return 0;
 }
 
-/*
- * Operation: A EOR M -> A
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
+/*  Perform a exclusive-or (xor) operation with a memory value and the A register and store back to the 
+ *  accumulator
 */
-
 uint8_t cpu6502::cpu_eor ()
 {
     read_memory8 ();
@@ -646,12 +564,7 @@ uint8_t cpu6502::cpu_eor ()
     return 0;
 }
 
-/*
- * Operation: M + 1 -> M
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Increment a memory value */
 uint8_t cpu6502::cpu_inc ()
 {
     read_memory8 ();
@@ -662,12 +575,7 @@ uint8_t cpu6502::cpu_inc ()
     return 0;
 }
 
-/*
- * Operation: X + 1 -> X
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Increment the X index register */
 uint8_t cpu6502::cpu_inx ()
 {
     m_x++;
@@ -676,12 +584,7 @@ uint8_t cpu6502::cpu_inx ()
     return 0;
 }
 
-/*
- * Operation: Y + 1 -> Y
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Increment the Y index register */
 uint8_t cpu6502::cpu_iny ()
 {
     m_y++;
@@ -690,13 +593,7 @@ uint8_t cpu6502::cpu_iny ()
     return 0;
 }
 
-/*
- * Operation: (PC+1) -> PCL
-              (PC+2) -> PCH
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Jump without a condition to a memory value location address */
 uint8_t cpu6502::cpu_jmp ()
 {
     read_memory16 ();
@@ -704,14 +601,7 @@ uint8_t cpu6502::cpu_jmp ()
     return 0;
 }
 
-/*
- * Operation: push (PC+2),
-              (PC+1) -> PCL
-              (PC+2) -> PCH
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Push the next instruction to the stack and jump to a memory value location */
 uint8_t cpu6502::cpu_jsr ()
 {
     m_data = m_pc;
@@ -721,12 +611,7 @@ uint8_t cpu6502::cpu_jsr ()
     return 0;
 }
 
-/*
- * Operation: M -> A
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Load the A register from a memory value */
 uint8_t cpu6502::cpu_lda ()
 {
     read_memory8 ();
@@ -737,12 +622,7 @@ uint8_t cpu6502::cpu_lda ()
 
 }
 
-/*
- * Operation: M -> X
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Load the X register from a memory value */
 uint8_t cpu6502::cpu_ldx ()
 {
     read_memory8 ();
@@ -752,12 +632,7 @@ uint8_t cpu6502::cpu_ldx ()
     return 0;
 }
 
-/*
- * Operation: M -> Y
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Load the Y register from a memory value */
 uint8_t cpu6502::cpu_ldy ()
 {
     read_memory8 ();
@@ -768,12 +643,7 @@ uint8_t cpu6502::cpu_ldy ()
 
 }
 
-/*
- * Operation: 0 -> [76543210] <- C
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   +   -   -   -
-*/
-
+/* Perform a shift right bitwise operation with a memory value or A register */
 uint8_t cpu6502::cpu_lsr ()
 {
     if (m_use_accumulator)
@@ -795,23 +665,13 @@ uint8_t cpu6502::cpu_lsr ()
     return 0;
 }
 
-/*
- * Operation: ___
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Nop operation, does exactly nothing, just waste cycles count */
 uint8_t cpu6502::cpu_nop ()
 {
     return 0;
 }
 
-/*
- * Operation: A OR M -> A
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Perform a bitwise OR operation with a memory value */
 uint8_t cpu6502::cpu_ora ()
 {
     read_memory8 ();
@@ -822,12 +682,7 @@ uint8_t cpu6502::cpu_ora ()
     return 0;
 }
 
-/*
- * Operation: push a 
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Push the accumulator to the stack */
 uint8_t cpu6502::cpu_pha ()
 {
     m_data = m_a;
@@ -835,12 +690,7 @@ uint8_t cpu6502::cpu_pha ()
     return 0;
 }
 
-/*
- * Operation: push SR
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Push the status register to the stack */
 uint8_t cpu6502::cpu_php ()
 {
     /* Setting the reserved bit from any know reason (just docs) */
@@ -851,12 +701,7 @@ uint8_t cpu6502::cpu_php ()
     return 0;
 }
 
-/*
- * Operation: pull A
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Put the top level stack value into the A register */
 uint8_t cpu6502::cpu_pla ()
 {
     pop8 ();
@@ -867,12 +712,7 @@ uint8_t cpu6502::cpu_pla ()
 
 }
 
-/*
- * Operation: pull SR
- * Affected flags:  N   Z   C   I   D   V
-                        from stack
-*/
-
+/* Put the top level stack value into the status register */
 uint8_t cpu6502::cpu_plp ()
 {
     pop8 ();
@@ -881,12 +721,7 @@ uint8_t cpu6502::cpu_plp ()
 
 }
 
-/*
- * Operation: C <- [76543210] <- C
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   +   -   -   -
-*/
-
+/* Perform a one bit rotation to left */
 uint8_t cpu6502::cpu_rol ()
 {
     if (m_use_accumulator)
@@ -912,12 +747,7 @@ uint8_t cpu6502::cpu_rol ()
 
 }
 
-/*
- * Operation: C -> [76543210] -> C
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   +   -   -   -
-*/
-
+/* Perform a one bit rotation to right */
 uint8_t cpu6502::cpu_ror ()
 {
     if (m_use_accumulator)
@@ -935,12 +765,7 @@ uint8_t cpu6502::cpu_ror ()
 
 }
 
-/*
- * Operation: pull SR, pull PC
- * Affected flags:  N   Z   C   I   D   V
-                        from stack
-*/
-
+/* Pop the status and the program counter from the stack */
 uint8_t cpu6502::cpu_rti ()
 {
     pop8 ();
@@ -951,12 +776,7 @@ uint8_t cpu6502::cpu_rti ()
     return 0;
 }
 
-/*
- * Operation: pull PC, PC+1 -> PC
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Pop the program counter from the stack, inclement him and store into the PC register */
 uint8_t cpu6502::cpu_rts ()
 {
     pop16 ();
@@ -965,12 +785,8 @@ uint8_t cpu6502::cpu_rts ()
     return 0;
 }
 
-/*
- * Operation: A - M - C -> A
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   +   -   -   +
-*/
-
+/* Subtract the accumulator with a memory value and the carry flag with borrow. */
+/* The decimal mode has been implemented */
 uint8_t cpu6502::cpu_sbc ()
 {
     read_memory8 ();
@@ -984,54 +800,33 @@ uint8_t cpu6502::cpu_sbc ()
         if (value > 0x99)
             value -= 0x60;
     }
-
     setflag (flags::CARRY, value < 0x100);
     m_a = value & 0xff;
     return 0;
 }
 
-/*
- * Operation: 1 -> C
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   1   -   -   -
-*/
-
+/* Set the carry flag to 1 */
 uint8_t cpu6502::cpu_sec ()
 {
     setflag (flags::CARRY, true);
     return 0;
 }
 
-/*
- * Operation: 1 -> D
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   1   -
-*/
-
+/* Set the decimal flag to 1 */
 uint8_t cpu6502::cpu_sed ()
 {
     setflag (flags::DECIMAL, true);
     return 0;
 }
 
-/*
- * Operation: 1 -> I
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   1   -   -
-*/
-
+/* Set the interrupt flag to 1 */
 uint8_t cpu6502::cpu_sei ()
 {
     setflag (flags::IRQ, true);
     return 0;
 }
 
-/*
- * Operation: A -> M
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Store the A register into the memory */
 uint8_t cpu6502::cpu_sta ()
 {
     m_data = m_a;
@@ -1039,12 +834,7 @@ uint8_t cpu6502::cpu_sta ()
     return 0;
 }
 
-/*
- * Operation: X -> M
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Store the X register into the memory */
 uint8_t cpu6502::cpu_stx ()
 {
     m_data = m_x;
@@ -1052,12 +842,7 @@ uint8_t cpu6502::cpu_stx ()
     return 0;
 }
 
-/*
- * Operation: Y -> M
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Store the Y register into the memory */
 uint8_t cpu6502::cpu_sty ()
 {
     m_data = m_y;
@@ -1065,12 +850,7 @@ uint8_t cpu6502::cpu_sty ()
     return 0;
 }
 
-/*
- * Operation: A -> X
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Move the A register value to X index register */
 uint8_t cpu6502::cpu_tax ()
 {
     m_x = m_a;
@@ -1079,12 +859,7 @@ uint8_t cpu6502::cpu_tax ()
     return 0;
 }
 
-/*
- * Operation: A -> Y
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Move the A register value to Y index register */
 uint8_t cpu6502::cpu_tay ()
 {
     m_y = m_a;
@@ -1093,12 +868,7 @@ uint8_t cpu6502::cpu_tay ()
     return 0;
 }
 
-/*
- * Operation: SP -> X
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Move the status register to the X register */
 uint8_t cpu6502::cpu_tsx ()
 {
     m_x = m_s;
@@ -1107,12 +877,7 @@ uint8_t cpu6502::cpu_tsx ()
     return 0;
 }
 
-/*
- * Operation: X -> A
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Move the X register value to the A register */
 uint8_t cpu6502::cpu_txa ()
 {
     m_a = m_x;
@@ -1121,24 +886,14 @@ uint8_t cpu6502::cpu_txa ()
     return 0;
 }
 
-/*
- * Operation: X -> SP
- * Affected flags:  N   Z   C   I   D   V
-                    -   -   -   -   -   -
-*/
-
+/* Move the X index register to the status register */
 uint8_t cpu6502::cpu_txs ()
 {
-    m_x = m_s;
+    m_s = m_x;
     return 0;
 }
 
-/*
- * Operation: Y -> A
- * Affected flags:  N   Z   C   I   D   V
-                    +   +   -   -   -   -
-*/
-
+/* Move the Y register value to A */
 uint8_t cpu6502::cpu_tya ()
 {
     m_a = m_y;
@@ -1172,14 +927,14 @@ void cpu6502::mem_abs ()
 /* This addressing mode specify a complete 2 bytes value plus the X index register */
 void cpu6502::mem_absx ()
 {
-    m_address = ++m_pc + m_x + getflag (flags::CARRY);
+    m_address = ++m_pc + m_x;
     m_pc += 2;
 }
 
 /* This addressing mode specify a complete 2 bytes value plus the Y index register */
 void cpu6502::mem_absy ()
 {
-    m_address = ++m_pc + m_y + getflag (flags::CARRY);
+    m_address = ++m_pc + m_y;
     m_pc += 2;
 }
 
@@ -1207,6 +962,7 @@ void cpu6502::mem_ind ()
 
 }
 
+/* Index a memory location with X register */
 void cpu6502::mem_indx ()
 {
     m_address = ++m_pc + m_x;
@@ -1216,6 +972,7 @@ void cpu6502::mem_indx ()
 
 }
 
+/* Indirect index a memory location with the Y register */
 void cpu6502::mem_indy ()
 {
     m_address = ++m_pc;
@@ -1239,18 +996,22 @@ void cpu6502::mem_rel ()
 
 }
 
+/* Zero page indexing */
 void cpu6502::mem_zp ()
 {
+    /* Only the first and fastest page is accessible */
     m_address = ++m_pc & 0x00ff;
     ++m_pc;
 }
 
+/* The same as above but using the X index register */
 void cpu6502::mem_zpx ()
 {
     m_address = (++m_pc + m_x) & 0x00ff;
     ++m_pc;
 }
 
+/* The same as above but using the Y index register */
 void cpu6502::mem_zpy ()
 {
     m_address = (++m_pc + m_y) & 0x00ff;

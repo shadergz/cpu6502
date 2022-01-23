@@ -22,8 +22,10 @@ constexpr uint16_t
     MAX_RAM_STORAGE = 0x7fff,
     MAX_ROM_STORAGE = 0xffff - MAX_RAM_STORAGE;
 
+/* The count of official 6502 instructions count */
 constexpr unsigned CPU_6502_INSTRUCTION_COUNT = 151;
 
+/* The status flag after the reset signal */
 constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
 
 enum class ivt_index {ABORT = 0, COP, IRQ_BRK, NMI, RESET};
@@ -87,7 +89,7 @@ public:
 private:
     /* Fetch helper functions */
 
-    /*  This variable will be used to read and write into the memory (a read operation will store the result
+    /*  This variables will be used to read and write into the memory (a read operation will store the result
      *  in 2 bytes, a write operation will perform a AND with 0x00ff and a cast for uint8_t before wrote the data)
     */
     uint16_t m_data{};
@@ -106,7 +108,7 @@ private:
     }
 #endif
     
-    /* CPU read/write operations (8-16 bit wides are implemented) */
+    /* CPU read/write operations (8 and 16 bit ranges are implemented) */
     void read_memory16 ();
     void read_memory8 ();
     void write_memory8 ();
@@ -143,6 +145,7 @@ private:
 
     void pop8 ()
     {
+        /* Pop a 8 bit value from the stack */
         m_address = m_s++;
         read_memory8 ();
     }
@@ -262,7 +265,7 @@ private:
     uint8_t cpu_txs ();
     uint8_t cpu_tya ();
 
-    /* Addressing modes */
+    /* Addressing modes operations */
     void mem_none();
     void mem_a ();
     void mem_abs ();

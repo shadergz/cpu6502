@@ -24,6 +24,13 @@ The reference memory layout used and implemented:
 */
 ```
 
+The default processor status after the reset signal:
+
+```cc
+/* The status flag after the reset signal */
+constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
+```
+
 ## How to build the test program
 
 Just type:
@@ -63,7 +70,7 @@ The second needed a ram and rom uint8_t* array pointers
 
 ```
 
-The clock method, use to execute cpu instructions by the counts of cycles needed to be executed
+The clock method, use to execute CPU instructions by the counts of cycles needed to be executed
 
 TIP: Outside a console emulator system u can use a auto generator or try to generate the real cpu 6502 frequency
 
