@@ -12,6 +12,9 @@
 /* Set to 1 to enable callback functions */
 #define USE_6502_CALLBACKS 1
 
+/* Set to 1 to enable the internal ram memory (You don't will need to provide one into the constructor) */
+#define USE_INTERNAL_RAM 0
+
 constexpr uint16_t 
     /* The start address location for the stack pointer, the stack will growing from 0x1ff to 0x100 */
     START_STACK_ADDRESS = 0x1ff,

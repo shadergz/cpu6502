@@ -4,13 +4,14 @@
 
 #include <memory>
 #include <iostream>
+#include <array>
 
 #include <fmt/format.h>
 
 #include "cpu6502.hh"
 
-static uint8_t cpu_ram[MAX_RAM_STORAGE]{};
-static const uint8_t cpu_rom[MAX_ROM_STORAGE]{};
+std::array<uint8_t, MAX_RAM_STORAGE> cpu_ram{};
+std::array<uint8_t, MAX_ROM_STORAGE> const cpu_rom{};
 
 uint8_t cpu_6502_read (uint16_t address)
 {

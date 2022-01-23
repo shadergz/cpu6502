@@ -71,7 +71,7 @@ void cpu6502::abort () {}
 std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &executed_cycles)
 {
     uint64_t consumed_bytes{}, executed{};
-    const opcode_info_t* current_instruction = nullptr;
+    const opcode_info_t *current_instruction = nullptr;
     uint8_t extra_cycles, cycles_used;
 
     for (; cycles_count > 0; executed++) {
@@ -80,9 +80,9 @@ std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &exe
             m_address = m_pc;
             read_memory8 ();
 
-            current_instruction = static_cast<const opcode_info_t*> (&m_cpu_isa[m_data & 0xff]);
+            current_instruction = &m_cpu_isa[m_data & 0xff];
             if (!current_instruction)
-                abort();
+                abort ();
 
             /* Decode the current opcode instruction */
             m_load_address = current_instruction->addressing;
@@ -150,8 +150,8 @@ bool cpu6502::getflag (flags flag) const
 #define CHECK_NEGATIVE(x)\
     x & 0x80
 
-#define CHECK_OVERFLOW(x, y)\
-    ((x ^ y) & 0x80)
+#define CHECK_OVERFLOW(x, y, z)\
+    (((x ^ y) & 0x80) & ~(x ^ z))
 
 void cpu6502::setflag (flags flag, bool status)
 {
@@ -233,14 +233,16 @@ void cpu6502::write_memory16 ()
 
 uint8_t cpu6502::cpu_adc ()
 {
+    uint16_t result;
     /* REDO: DECIMAL MODE NOT IMPLEMENTED */
     read_memory8 ();
-    setflag (flags::CARRY, CHECK_CARRY (m_a, m_data));
-    m_a += ((uint8_t)m_data) + getflag (flags::CARRY);
-    setflag (flags::ZERO, CHECK_ZERO (m_a));
+    result = m_a + m_data + getflag (flags::CARRY);
+    setflag (flags::CARRY, CHECK_CARRY (result, 0));
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
-    setflag (flags::OVER_FLOW, CHECK_NEGATIVE (m_a));
+    setflag (flags::ZERO, CHECK_ZERO (m_a));
 
+    setflag (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, (uint8_t)result, m_data));
+    m_a = result & 0x00ff;
     return 0;
 }
 
@@ -302,10 +304,18 @@ uint8_t cpu6502::cpu_bcc ()
 
 uint8_t cpu6502::cpu_bcs ()
 {
+    uint16_t branch_address;
+    uint8_t extra_cycles = 1;
+
     read_memory8 ();
-    if (getflag (flags::CARRY))
-        m_pc += m_data;
-    return 0;
+    if (getflag (flags::CARRY)) {
+        branch_address = m_pc + m_data;
+        if (page_crossed (branch_address, m_pc))
+            extra_cycles++;
+
+        m_pc = branch_address;
+    }
+    return extra_cycles;
 }
 
 /*
@@ -316,10 +326,18 @@ uint8_t cpu6502::cpu_bcs ()
 
 uint8_t cpu6502::cpu_beq ()
 {
+    uint16_t branch_address;
+    uint8_t extra_cycles = 1;
+
     read_memory8 ();
-    if (getflag (flags::ZERO))
-        m_pc = (uint8_t)m_data;
-    return 0;
+    if (getflag (flags::ZERO)) {
+        branch_address = m_pc + m_data;
+        if (page_crossed (branch_address, m_pc))
+            extra_cycles++;
+            
+        m_pc = branch_address;
+    }
+    return extra_cycles;
 }
 
 /*
@@ -351,10 +369,18 @@ uint8_t cpu6502::cpu_bit ()
 
 uint8_t cpu6502::cpu_bmi ()
 {
+    uint16_t branch_address;
+    uint8_t extra_cycles = 1;
+
     read_memory8 ();
-    if (getflag (flags::NEGATIVE))
-        m_pc += m_data;
-    return 0;
+    if (getflag (flags::NEGATIVE)) {
+        branch_address = m_pc + m_data;
+        if (page_crossed (branch_address, m_pc))
+            extra_cycles++;
+            
+        m_pc = branch_address;
+    }
+    return extra_cycles;
 }
 
 /*
@@ -365,10 +391,18 @@ uint8_t cpu6502::cpu_bmi ()
 
 uint8_t cpu6502::cpu_bne ()
 {
+    uint16_t branch_address;
+    uint8_t extra_cycles = 1;
+
     read_memory8 ();
-    if (!getflag (flags::ZERO))
-        m_pc += m_data;
-    return 0;
+    if (!getflag (flags::ZERO)) {
+        branch_address = m_pc + m_data;
+        if (page_crossed (branch_address, m_pc))
+            extra_cycles++;
+            
+        m_pc = branch_address;
+    }
+    return extra_cycles;
 }
 
 /*
@@ -379,10 +413,18 @@ uint8_t cpu6502::cpu_bne ()
 
 uint8_t cpu6502::cpu_bpl ()
 {
+    uint16_t branch_address;
+    uint8_t extra_cycles = 1;
+
     read_memory8 ();
-    if (!getflag (flags::NEGATIVE))
-        m_pc += m_data;
-    return 0;
+    if (!getflag (flags::NEGATIVE)) {
+        branch_address = m_pc + m_data;
+        if (page_crossed (branch_address, m_pc))
+            extra_cycles++;
+            
+        m_pc = branch_address;
+    }
+    return extra_cycles;
 }
 
 /*
@@ -902,7 +944,7 @@ uint8_t cpu6502::cpu_ror ()
 uint8_t cpu6502::cpu_rti ()
 {
     pop8 ();
-    m_p.status = static_cast<uint8_t>(m_data);
+    m_p.status = static_cast<uint8_t> (m_data);
     pop16 ();
     m_pc = m_data;
 
@@ -919,7 +961,7 @@ uint8_t cpu6502::cpu_rts ()
 {
     pop16 ();
     m_data++;
-    m_pc = m_pc;
+    m_pc = m_data;
     return 0;
 }
 
@@ -932,12 +974,12 @@ uint8_t cpu6502::cpu_rts ()
 uint8_t cpu6502::cpu_sbc ()
 {
     read_memory8 ();
-    uint8_t value = m_a - ((uint8_t)m_data) - getflag (flags::CARRY);
+    uint16_t value = m_a - m_data - getflag (flags::CARRY);
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (value));
     setflag (flags::ZERO, CHECK_ZERO (value));
-    setflag (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, value) && CHECK_OVERFLOW (m_a, (uint8_t)m_data));
+    setflag (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, value, m_data));
     if (getflag (flags::DECIMAL)) {
-        if (((m_a & 0x0f) - static_cast<uint8_t> (getflag (flags::CARRY)))  < (static_cast<uint8_t> (m_data) & 0x0f))
+        if (((m_a & 0x0f) - getflag (flags::CARRY)) < (m_data & 0x0f))
             value -= 6;
         if (value > 0x99)
             value -= 0x60;
@@ -980,7 +1022,7 @@ uint8_t cpu6502::cpu_sed ()
 
 uint8_t cpu6502::cpu_sei ()
 {
-    setflag(flags::IRQ, true);
+    setflag (flags::IRQ, true);
     return 0;
 }
 
@@ -1137,7 +1179,7 @@ void cpu6502::mem_absx ()
 /* This addressing mode specify a complete 2 bytes value plus the Y index register */
 void cpu6502::mem_absy ()
 {
-    m_address = ++m_pc + m_y + getflag(flags::CARRY);
+    m_address = ++m_pc + m_y + getflag (flags::CARRY);
     m_pc += 2;
 }
 
@@ -1185,8 +1227,8 @@ void cpu6502::mem_indy ()
 }
 
 /* Only branches instructions will use this addressing mode */
-/*	The data after a branch instruction is called 'offset', it's a signed value (range -126 -> 127)
- *	used to index with the PC address and redirected the program flow
+/*  The data after a branch instruction opcode is called 'offset', it's a signed value (range between -128 and 127)
+ *  used to index with the PC address and redirected the program flow
 */
 void cpu6502::mem_rel ()
 {
