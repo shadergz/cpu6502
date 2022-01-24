@@ -6,8 +6,26 @@
 
 #include <array>
 #include <cstdint>
+#include <string_view>
+#include <cstdarg>
 
 #include <fmt/format.h>
+
+#define DEBUG 1
+#if DEBUG
+#include <experimental/source_location>
+
+void inline LOG_MESSAGE (const std::string_view &format, 
+    const std::experimental::source_location &location = std::experimental::source_location::current())
+{
+    fmt::print (stderr, "{} {}() {:03d}+{:02d}: {}", location.file_name (), location.function_name (), location.line (), location.column (), format);
+}
+#define DEBUG_6502(msg_format, ...)\
+    LOG_MESSAGE (fmt::format (msg_format, ##__VA_ARGS__))
+#else
+#define DEBUG_6502(msg_format, ...)\
+    (void)msg_format
+#endif
 
 /* Set to 1 to enable callback functions */
 #define USE_6502_CALLBACKS 1
@@ -87,7 +105,7 @@ public:
     void setflag (flags flag, bool status);
     
 private:
-    /* Fetch helper functions */
+    /* Functions and variables used in the read/write data operations */
 
     /*  This variables will be used to read and write into the memory (a read operation will store the result
      *  in 2 bytes, a write operation will perform a AND with 0x00ff and a cast for uint8_t before wrote the data)
@@ -100,7 +118,7 @@ private:
     constexpr uint8_t* select_memory (uint16_t address)
     {
         uint8_t *memory = nullptr;
-        if (address < MAX_RAM_STORAGE)
+        if (address <= MAX_RAM_STORAGE)
             memory = m_ram;
         else
             memory = m_rom;
@@ -281,7 +299,7 @@ private:
     void mem_zpx ();
     void mem_zpy ();
 
-#pragma endregion "CPU instruction operations definition"
+#pragma endregion "CPU instructions definition"
 
 #pragma region
     enum class opcode_instruction {

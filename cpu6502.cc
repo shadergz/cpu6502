@@ -25,7 +25,7 @@ cpu6502::cpu6502 (cpu_read read_function, cpu_write write_function)
 cpu6502::cpu6502 (uint8_t *ram, uint8_t *rom)
 {
 #if USE_INTERNAL_RAM
-    memset (m_ram.data (), 0, MAX_RAM_STORAGE);
+    memset (static_cast<void*> (m_ram.data ()), 0, MAX_RAM_STORAGE);
 #else
     assert (ram);
     m_ram = ram;
@@ -71,7 +71,7 @@ void cpu6502::abort () {}
 std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &executed_cycles)
 {
     uint64_t consumed_bytes{}, executed{};
-    const opcode_info_t *current_instruction = nullptr;
+    const opcode_info_t *current_instruction;
     uint8_t extra_cycles, cycles_used;
 
     for (; cycles_count > 0; executed++) {
@@ -105,7 +105,7 @@ std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &exe
             cycles_count -= cycles_used;
         }
         catch (uint8_t invalid_opcode) {
-            std::cerr << fmt::format ("Stopped by a invalid instruction opcode {:#x} during the decode event", 
+            std::cerr << fmt::format ("Stopped by a invalid instruction opcode 0x{:02x} during the decode event", 
                 invalid_opcode) << std::endl;
             std::terminate ();
         }
@@ -116,8 +116,8 @@ std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &exe
 /* Display the internal CPU state */
 void cpu6502::printcs ()
 {
-    fmt::print ("6502 microprocessor informations:\nPC = {:#x}, STACK POINTER = {:#x}\n", m_pc, (uint16_t) m_s | 0x100);
-    fmt::print ("CPU register:\nA = {:#x}, X = {:#x}, Y = {:#x}\n", m_a, m_x, m_y);
+    fmt::print ("6502 microprocessor informations:\nPC = 0x{:04x}, STACK POINTER = 0x{:04x}\n", m_pc, (uint16_t) m_s | 0x100);
+    fmt::print ("CPU register:\nA = 0x{:02x}, X = 0x{:02x}, Y = 0x{:02x}\n", m_a, m_x, m_y);
     fmt::print ("CPU status:\nCarry = {}\n", getflag (flags::CARRY));
 
 }
@@ -185,6 +185,9 @@ void cpu6502::setflag (flags flag, bool status)
     }
 }
 
+#define GET_MEMORY_LOCATION_STR(address)\
+    address <= 0x1ff ? "STACK" : address <= MAX_RAM_STORAGE ? "RAM" : "ROM"
+
 /* Read memory operations */
 void cpu6502::read_memory8 ()
 {
@@ -192,8 +195,9 @@ void cpu6502::read_memory8 ()
     m_data = m_cpu_read_function (m_address);
 #else
     uint8_t *memory = select_memory (m_address);
-    m_data = memory[m_address];
+    m_data = memory[m_address & MAX_RAM_STORAGE];
 #endif
+    DEBUG_6502 ("0x{:02x} read from 0x{:04x} ({})\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::read_memory16 ()
@@ -204,20 +208,23 @@ void cpu6502::read_memory16 ()
 
     m_address++;
     read_memory8 ();
-    m_data |= (uint16_t)(low << 8);
+    m_data <<= 8;
+    m_data |= low;
 }
 
 /* Write memory operations */
 void cpu6502::write_memory8 ()
 {
+    m_data &= 0x00ff;
     /* You can't write t the read only memory */
-    assert (m_address < MAX_RAM_STORAGE);
+    assert (m_address <= MAX_RAM_STORAGE);
 #if USE_6502_CALLBACKS
-    m_cpu_write_function (m_address, m_data & 0x00ff);
+    m_cpu_write_function (m_address, m_data);
 #else
     uint8_t *memory = select_memory (m_address);
-    memory[m_address] = static_cast<uint8_t> (m_data & 0x00ff);
+    memory[m_address & MAX_RAM_STORAGE] = static_cast<uint8_t> (m_data);
 #endif
+    DEBUG_6502 ("0x{:02x} writted into 0x{:04x} ({})\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::write_memory16 ()
@@ -399,6 +406,7 @@ uint8_t cpu6502::cpu_bpl ()
  */
 uint8_t cpu6502::cpu_brk ()
 {
+    DEBUG_6502 ("Executing BRK operation\n");
     /* A extra byte is added to provide a reason for the break */
     m_data = m_pc + 1;
     push16 ();
@@ -637,8 +645,8 @@ uint8_t cpu6502::cpu_ldy ()
 {
     read_memory8 ();
     m_y = static_cast<uint8_t>(m_data);
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE(m_y));
-    setflag (flags::ZERO, CHECK_ZERO(m_y));
+    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
+    setflag (flags::ZERO, CHECK_ZERO (m_y));
     return 0;
 
 }
@@ -655,7 +663,7 @@ uint8_t cpu6502::cpu_lsr ()
     m_data >>= 1;
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
     setflag (flags::ZERO, CHECK_ZERO (m_data));
-    setflag (flags::CARRY, CHECK_CARRY ((uint8_t)m_data, (uint8_t)old_value));
+    setflag (flags::CARRY, CHECK_CARRY (m_data, old_value));
 
     if (m_use_accumulator)
         m_a = static_cast<uint8_t> (m_data);

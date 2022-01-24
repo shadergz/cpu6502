@@ -16,3 +16,4 @@ endif ()
 add_executable (cpu6502_test "test_cpu6502.cc" "cpu6502.cc")
 
 target_link_libraries (cpu6502_test fmt::fmt)
+#set_property (TARGET cpu6502_test PROPERTY CXX_STANDARD 20)
