@@ -118,7 +118,7 @@ size_t cpu6502::step (size_t &executed_cycles)
     return consumed_bytes;
 }
 
-std::pair<size_t, size_t> cpu6502::steps_count (size_t execute, size_t &executed_cycles)
+std::pair<size_t, size_t> cpu6502::step_count (size_t execute, size_t &executed_cycles)
 {
     size_t consumed_bytes{}, executed{};
     assert (execute);

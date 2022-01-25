@@ -77,7 +77,7 @@ The clock method, use to execute CPU instructions by the counts of cycles needed
 TIP: Outside a console emulator system u can use a auto generator or try to generate the real cpu 6502 frequency
 
 ```cc
-std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &executed_cycles)
+std::pair<size_t, size_t> cpu6502::clock (size_t cycles_count, size_t &executed_cycles)
 ```
 
 ## Future updates

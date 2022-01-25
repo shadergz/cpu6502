@@ -100,7 +100,7 @@ public:
     /* Execute cycles_count cycles */
     std::pair<size_t, size_t> clock (size_t cycles_count, size_t &executed_cycles);
     size_t step (size_t &executed_cycles);
-    std::pair<size_t, size_t> steps_count (size_t cycles_count, size_t &executed_cycles);
+    std::pair<size_t, size_t> step_count (size_t cycles_count, size_t &executed_cycles);
 
     /* Processor status manipulation functions */
     bool getflag (flags flag) const;
