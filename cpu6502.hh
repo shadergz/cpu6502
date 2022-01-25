@@ -18,7 +18,7 @@
 void inline LOG_MESSAGE (const std::string_view &format, 
     const std::experimental::source_location &location = std::experimental::source_location::current())
 {
-    fmt::print (stderr, "{} {}() {:03d}+{:02d}: {}", location.file_name (), location.function_name (), location.line (), location.column (), format);
+    fmt::print (stderr, "{} {}() -> {:03d}+{:02d}: {}", location.file_name (), location.function_name (), location.line (), location.column (), format);
 }
 #define DEBUG_6502(msg_format, ...)\
     LOG_MESSAGE (fmt::format (msg_format, ##__VA_ARGS__))
@@ -98,7 +98,9 @@ public:
     void abort ();
 
     /* Execute cycles_count cycles */
-    std::pair<uint64_t, uint64_t> clock (size_t cycles_count, uint64_t& executed_cycles);
+    std::pair<size_t, size_t> clock (size_t cycles_count, size_t &executed_cycles);
+    size_t step (size_t &executed_cycles);
+    std::pair<size_t, size_t> steps_count (size_t cycles_count, size_t &executed_cycles);
 
     /* Processor status manipulation functions */
     bool getflag (flags flag) const;
@@ -322,7 +324,7 @@ private:
 
     using cpu = cpu6502;
     
-    std::array<opcode_info_t, 0x20> const m_cpu_isa {{
+    std::array<opcode_info_t, 0x40> const m_cpu_isa {{
         {&cpu::cpu_brk, &cpu::mem_impl, 7, 0, 1}, {&cpu::cpu_ora, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
         {&cpu::cpu_ora, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zp,   5, 0, 2}, 
         {&cpu::cpu_php, &cpu::mem_impl, 3, 0, 1}, {&cpu::cpu_ora, &cpu::mem_imm,  2, 0, 2},
@@ -331,7 +333,18 @@ private:
         {&cpu::cpu_bpl, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_ora, &cpu::mem_indy, 5, 0, 2}, {}, {}, {},
         {&cpu::cpu_ora, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zpx,  6, 0, 2}, {},
         {&cpu::cpu_clc, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_ora, &cpu::mem_absy, 4, 1, 3}, {}, {}, {},
-        {&cpu::cpu_ora, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_asl, &cpu::mem_absx, 7, 0, 3}, {}
+        {&cpu::cpu_ora, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_asl, &cpu::mem_absx, 7, 0, 3}, {},
+        {&cpu::cpu_jsr, &cpu::mem_abs,  6, 0, 3}, {&cpu::cpu_and, &cpu::mem_indx, 6, 0, 2}, {}, {},
+        {&cpu::cpu_bit, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_and, &cpu::mem_zp,   3, 0, 2},
+        {&cpu::cpu_rol, &cpu::mem_zp,   5, 0, 2}, {}, 
+        {&cpu::cpu_plp, &cpu::mem_impl, 4, 0, 1}, {&cpu::cpu_and, &cpu::mem_imm,  2, 0, 2},
+        {&cpu::cpu_rol, &cpu::mem_a,    2, 0, 1}, {},
+        {&cpu::cpu_bit, &cpu::mem_abs,  4, 0, 3}, {&cpu::cpu_and, &cpu::mem_abs,  4, 0, 3},
+        {&cpu::cpu_rol, &cpu::mem_abs,  6, 0, 3}, {},
+        {&cpu::cpu_bmi, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_and, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
+        {&cpu::cpu_and, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_rol, &cpu::mem_zpx,  6, 0, 2}, {},
+        {&cpu::cpu_sec, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_and, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
+        {&cpu::cpu_and, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_rol, &cpu::mem_absx, 7, 0, 3}, {}
     }};
 #pragma endregion "Opcode table"
 };

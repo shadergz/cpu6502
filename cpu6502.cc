@@ -4,10 +4,11 @@
 
 #include <iostream>
 #include <cassert>
+#include <utility>
 
 #include "cpu6502.hh"
 
-#define LOAD_ADDRESS()\
+#define FETCH_ADDRESS()\
     (this->*m_load_address) ()
 #define EXEC_OPERATION(func)\
     (this->*func) ()
@@ -68,47 +69,63 @@ void cpu6502::nmi ()
 
 void cpu6502::abort () {}
 
-std::pair<uint64_t, uint64_t> cpu6502::clock (size_t cycles_count, uint64_t &executed_cycles)
+std::pair<size_t, size_t> cpu6502::clock (size_t cycles_count, size_t &executed_cycles)
 {
-    uint64_t consumed_bytes{}, executed{};
+    size_t consumed_bytes{}, executed{};
+    executed_cycles = 0;
+
+    for (; cycles_count > executed_cycles; executed++) {
+        consumed_bytes += step (executed_cycles);
+        /* Ensuring that the CPU hasn't performed more cycles that has been requested */
+        assert (cycles_count >= executed_cycles);
+    }
+
+    return {executed, consumed_bytes};
+}
+
+size_t cpu6502::step (size_t &executed_cycles)
+{
+    size_t consumed_bytes;
     const opcode_info_t *current_instruction;
     uint8_t extra_cycles, cycles_used;
 
-    for (; cycles_count > 0; executed++) {
-        try {
-            /* Fetch the current instruction */
-            m_address = m_pc;
-            read_memory8 ();
-
-            current_instruction = &m_cpu_isa[m_data & 0xff];
-            if (!current_instruction)
-                abort ();
-
-            /* Decode the current opcode instruction */
-            m_load_address = current_instruction->addressing;
-            cycles_used = current_instruction->cycles_wasted;
-
-            /* Execute the current instruction */
-            /* Load the correct address memory location for each instruction */
-            LOAD_ADDRESS ();
-
-            extra_cycles = EXEC_OPERATION (current_instruction->instruction);
+    try {
+        /* Fetch the current instruction */
+        m_address = m_pc;
+        read_memory8 ();
+        current_instruction = &m_cpu_isa[m_data & 0xff];
+        if (!current_instruction)
+            abort ();
+        
+        /* Decode the current opcode instruction */
+        m_load_address = current_instruction->addressing;
+        cycles_used = current_instruction->cycles_wasted;
+        /* Execute the current instruction */
+        /* Load the correct address memory location for each instruction */
+        FETCH_ADDRESS ();
+        extra_cycles = EXEC_OPERATION (current_instruction->instruction);
             
-            if (current_instruction->can_exceeded)
-                cycles_used += extra_cycles;
+        if (current_instruction->can_exceeded)
+            cycles_used += extra_cycles;
 
-            m_cycles_wasted += cycles_used;
-            consumed_bytes += current_instruction->bytes_consumed;
-
-            /* Ensuring that the CPU hasn't performed more cycles that has been requested */
-            assert (cycles_used <= cycles_count);
-            cycles_count -= cycles_used;
-        }
-        catch (uint8_t invalid_opcode) {
+        executed_cycles += cycles_used;
+        consumed_bytes = current_instruction->bytes_consumed;            
+        } catch (uint8_t invalid_opcode) {
             std::cerr << fmt::format ("Stopped by a invalid instruction opcode 0x{:02x} during the decode event", 
                 invalid_opcode) << std::endl;
             std::terminate ();
         }
+    return consumed_bytes;
+}
+
+std::pair<size_t, size_t> cpu6502::steps_count (size_t execute, size_t &executed_cycles)
+{
+    size_t consumed_bytes{}, executed{};
+    assert (execute);
+    
+    executed_cycles = 0;
+    for (; execute-- > 0; executed++) {
+        consumed_bytes += step (executed_cycles);
     }
     return {executed, consumed_bytes};
 }
@@ -119,7 +136,6 @@ void cpu6502::printcs ()
     fmt::print ("6502 microprocessor informations:\nPC = 0x{:04x}, STACK POINTER = 0x{:04x}\n", m_pc, (uint16_t) m_s | 0x100);
     fmt::print ("CPU register:\nA = 0x{:02x}, X = 0x{:02x}, Y = 0x{:02x}\n", m_a, m_x, m_y);
     fmt::print ("CPU status:\nCarry = {}\n", getflag (flags::CARRY));
-
 }
 
 bool cpu6502::getflag (flags flag) const
@@ -689,6 +705,8 @@ uint8_t cpu6502::cpu_ora ()
 
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
     setflag (flags::ZERO, CHECK_ZERO (m_data));
+
+    write_memory8 ();
 
     return 0;
 }

@@ -12,7 +12,7 @@
 #include "cpu6502.hh"
 
 static std::array<uint8_t, MAX_RAM_STORAGE> cpu_ram{};
-static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom{};
+static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom {};
 
 uint8_t cpu_6502_read (uint16_t address)
 {
@@ -33,11 +33,11 @@ int main ()
     cpu_rom[0x7ffd] = 0x80;
 
     auto cpu_6502 = std::make_shared<cpu6502> (cpu_6502_read, cpu_6502_write);
-    uint64_t executed_cycles = 0;
+    size_t executed_cycles = 0;
 
     cpu_6502->reset ();
     auto [executed, bytes_used] = cpu_6502->clock (14, executed_cycles);
-    fmt::print ("Executed instructions: {}, Bytes read: {}\n", executed, bytes_used);
+    fmt::print ("Executed instructions: {}, Bytes read: {}, Cycles used {}\n", executed, bytes_used, executed_cycles);
     cpu_6502->printcs ();
 
     return 0;
