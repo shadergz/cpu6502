@@ -124,9 +124,8 @@ std::pair<size_t, size_t> cpu6502::step_count (size_t execute, size_t &executed_
     assert (execute);
     
     executed_cycles = 0;
-    for (; execute-- > 0; executed++) {
+    for (; execute-- > 0; executed++)
         consumed_bytes += step (executed_cycles);
-    }
     return {executed, consumed_bytes};
 }
 
@@ -160,16 +159,39 @@ bool cpu6502::getflag (flags flag) const
     }
 }
 
-/* Macros used inside the CPU operations */
-#define CHECK_CARRY(x, y)\
-    ((uint16_t)x + y) & 0xff00 ? 1 : 0
-#define CHECK_ZERO(x)\
-    !(x)
-#define CHECK_NEGATIVE(x)\
-    x & 0x80
+constexpr bool CHECK_CARRY (uint16_t x, uint16_t y)
+{
+    return (x + y) & 0xff00;
+}
 
-#define CHECK_OVERFLOW(x, y, z)\
-    (((x ^ y) & 0x80) & ~(x ^ z))
+constexpr bool CHECK_ZERO (uint16_t x)
+{
+    return !x;
+}
+
+constexpr bool CHECK_NEGATIVE (uint16_t x)
+{
+    return x & 0x80;
+}
+
+constexpr bool CHECK_OVERFLOW (uint16_t x, uint16_t y, uint16_t z)
+{
+    /* 
+     *  X = 11111000
+     *  Y = 01111010
+     *  Z = 00001010
+    */
+    return (
+        
+        ((x ^ y)
+        /* = 10000010 */
+        & 0x80)
+        /* = (1)00000000 = true = 1 */
+        & ~(x ^ z)
+        /* = X ^ Y = 11110010 ~ = 00001101 = (00000001 & 00001101) = 1 (OVERFLOW) */
+        
+    );
+}
 
 /* Control flags manipulation */
 void cpu6502::setflag (flags flag, bool status)
@@ -201,8 +223,10 @@ void cpu6502::setflag (flags flag, bool status)
     }
 }
 
-#define GET_MEMORY_LOCATION_STR(address)\
-    address <= 0x1ff ? "STACK" : address <= MAX_RAM_STORAGE ? "RAM" : "ROM"
+constexpr auto GET_MEMORY_LOCATION_STR (uint16_t address)
+{
+    return address <= 0x1ff ? "STACK" : address <= MAX_RAM_STORAGE ? "RAM" : "ROM";
+}
 
 /* Read memory operations */
 void cpu6502::read_memory8 ()
@@ -275,7 +299,7 @@ uint8_t cpu6502::cpu_adc ()
 uint8_t cpu6502::cpu_and ()
 {
     read_memory8 ();
-    m_a = m_a & ((uint8_t)m_data);
+    m_a &= ((uint8_t)m_data);
     setflag (flags::ZERO, CHECK_ZERO (m_a));
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
 
@@ -351,11 +375,14 @@ uint8_t cpu6502::cpu_beq ()
 /*  Perform a bit check, the msb (7th bit) is deslocated to the negative flag, and the 
  *  6th bit is deslocated to the overflow flag
 */
+
+constexpr bool CPU_BIT_OVER (uint16_t x)
+{
+    return (x & (6 << 1));   
+}
+
 uint8_t cpu6502::cpu_bit ()
 {
-#define CPU_BIT_OVER(x)\
-    (x & 6 << 1)
-
     read_memory8 ();
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
     /* Trying to force set the overflow flag with the 6th bit of the fetched data */
@@ -734,7 +761,7 @@ uint8_t cpu6502::cpu_php ()
 uint8_t cpu6502::cpu_pla ()
 {
     pop8 ();
-    m_a = static_cast<uint8_t>(m_data);
+    m_a = static_cast<uint8_t> (m_data);
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
     setflag (flags::ZERO, CHECK_ZERO (m_a));
     return 0;
