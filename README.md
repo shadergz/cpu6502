@@ -80,10 +80,9 @@ TIP: Outside a console emulator system u can use a auto generator or try to gene
 std::pair<size_t, size_t> cpu6502::clock (size_t cycles_count, size_t &executed_cycles)
 ```
 
-The step method, used to execute only one instructions from the current CPU state
+The step method, used to execute only one instruction from the current CPU state
 
 ```cc
 size_t cycles_wasted();
-
 size_t cpu6502::step (&cycles_wasted);
 ```
