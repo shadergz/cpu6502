@@ -72,7 +72,7 @@ The second needed a ram and rom uint8_t* array pointers
 
 ```
 
-The clock method, use to execute CPU instructions by the counts of cycles needed to be executed
+The clock method, used to execute CPU instructions by the counts of cycles needed to be executed
 
 TIP: Outside a console emulator system u can use a auto generator or try to generate the real cpu 6502 frequency
 
@@ -80,7 +80,10 @@ TIP: Outside a console emulator system u can use a auto generator or try to gene
 std::pair<size_t, size_t> cpu6502::clock (size_t cycles_count, size_t &executed_cycles)
 ```
 
-## Future updates
+The step method, used to execute only one instructions from the current CPU state
 
-- To add all instructions
-- To create a 6502 frequency generator
+```cc
+size_t cycles_wasted();
+
+size_t cpu6502::step (&cycles_wasted);
+```

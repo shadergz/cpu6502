@@ -324,7 +324,7 @@ private:
 
     using cpu = cpu6502;
     
-    std::array<opcode_info_t, 0x5f> const m_cpu_isa {{
+    std::array<opcode_info_t, 0xa0> const m_cpu_isa {{
         {&cpu::cpu_brk, &cpu::mem_impl, 7, 0, 1}, {&cpu::cpu_ora, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
         {&cpu::cpu_ora, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zp,   5, 0, 2}, 
         {&cpu::cpu_php, &cpu::mem_impl, 3, 0, 1}, {&cpu::cpu_ora, &cpu::mem_imm,  2, 0, 2},
@@ -355,7 +355,32 @@ private:
         {&cpu::cpu_eor, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_lsr, &cpu::mem_zpx,  6, 0, 2}, {},
         {&cpu::cpu_cli, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_eor, &cpu::mem_absy, 4, 1, 3}, {},
         {}, {},
-        {&cpu::cpu_eor, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_lsr, &cpu::mem_absx, 7, 0, 3}, {}
+        {&cpu::cpu_eor, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_lsr, &cpu::mem_absx, 7, 0, 3}, {},
+        {&cpu::cpu_rts, &cpu::mem_impl, 6, 0, 1}, {&cpu::cpu_adc, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
+        {&cpu::cpu_adc, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_ror, &cpu::mem_zp,   5, 0, 2}, {},
+        {&cpu::cpu_pla, &cpu::mem_impl, 4, 0, 1}, {&cpu::cpu_adc, &cpu::mem_imm,  2, 0, 2},
+        {&cpu::cpu_ror, &cpu::mem_a,    2, 0, 1}, {},
+        {&cpu::cpu_jmp, &cpu::mem_ind,  5, 0, 3}, {&cpu::cpu_adc, &cpu::mem_abs,  4, 0, 3},
+        {&cpu::cpu_ror, &cpu::mem_abs,  6, 0, 3}, {},
+        {&cpu::cpu_bvs, &cpu::mem_rel,  2, 1, 2}, {}, {}, {},
+        {&cpu::cpu_adc, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_ror, &cpu::mem_zpx,  6, 0, 2},
+        {&cpu::cpu_sei, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_adc, &cpu::mem_absy, 4, 1, 3},
+        {}, {}, {},
+        {&cpu::cpu_adc, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_ror, &cpu::mem_absx, 7, 0, 3}, {}, {},
+        {&cpu::cpu_sta, &cpu::mem_indx, 6, 0, 2}, {}, {},
+        {&cpu::cpu_sty, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_sta, &cpu::mem_zp,   3, 0, 2},
+        {&cpu::cpu_stx, &cpu::mem_zp,   3, 0, 2}, {},
+        {&cpu::cpu_dey, &cpu::mem_impl, 2, 0, 1}, {},
+        {&cpu::cpu_tax, &cpu::mem_impl, 2, 0, 1}, {},
+        {&cpu::cpu_sty, &cpu::mem_abs,  4, 0, 3}, {&cpu::cpu_sta, &cpu::mem_abs,  4, 0, 3},
+        {&cpu::cpu_stx, &cpu::mem_zp,   3, 0, 2}, {},
+        {&cpu::cpu_bcc, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_sta, &cpu::mem_indy, 6, 0, 2},
+        {}, {},
+        {&cpu::cpu_sty, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_sta, &cpu::mem_absx, 5, 0, 3},
+        {&cpu::cpu_stx, &cpu::mem_zpy,  4, 0, 2}, {},
+        {&cpu::cpu_tya, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_sta, &cpu::mem_absy, 5, 0, 3},
+        {&cpu::cpu_txs, &cpu::mem_impl, 2, 0, 1}, {}, {},
+        {&cpu::cpu_sta, &cpu::mem_absx, 5, 0, 3}, {}, {}
     }};
 #pragma endregion "Opcode table"
 };
