@@ -305,7 +305,7 @@ private:
 
 #pragma region
     enum class opcode_instruction {
-        BRK = 0x00,         ORA = 0x01,         ORA_ZP = 0x05,      ASL_ZP = 0x06,      PHP_IMPL = 0x08,    ORA_IMM = 0x09,     ASL_ACC = 0x0a,
+        BRK = 0x00,         ORA_INDX = 0x01,    ORA_ZP = 0x05,      ASL_ZP = 0x06,      PHP_IMPL = 0x08,    ORA_IMM = 0x09,     ASL_ACC = 0x0a,
         ORA_ABS = 0x0d,     ASL_ABS = 0x0e,     BPL_REL = 0x10,     ORA_INDY = 0x11,    ORA_ZPX = 0x15,     ASL_ZPX = 0x16,     CLC_IMPL = 0x18,
         ORA_ABSY = 0x19,    ORA_ABSX = 0x1d,    ASL_ABSX = 0x1e
     };

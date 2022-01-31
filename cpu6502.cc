@@ -54,17 +54,34 @@ void cpu6502::reset ()
     read_memory16 ();
     m_pc = m_data;
 }
+
 void cpu6502::irq ()
 {
     if (!getflag (flags::IRQ)) {
         /* There's a interrupt to procedure (Doing it now) */
-
+        setflag (flags::BRK, false);
+        m_data = m_pc;
+        push16 ();
+        m_data = m_s;
+        push8 ();
+        setflag (flags::IRQ, true);
+        m_address = INTERRUPT_VECTOR_TABLE[static_cast<int> (ivt_index::IRQ_BRK)][0];
+        read_memory16 ();
+        m_pc = m_data;
     }
 }
 
 void cpu6502::nmi ()
 {
-
+    setflag (flags::BRK, false);
+    m_data = m_pc;
+    push16 ();
+    m_data = m_s;
+    push8 ();
+    setflag (flags::IRQ, true);
+    m_data = INTERRUPT_VECTOR_TABLE[static_cast<int> (ivt_index::NMI)][0];
+    read_memory16 ();
+    m_pc = m_data;
 }
 
 void cpu6502::abort () {}
@@ -90,12 +107,12 @@ size_t cpu6502::step (size_t &executed_cycles)
     uint8_t extra_cycles, cycles_used;
 
     try {
-        /* Fetch the current instruction */
+        /* Fetching the current instruction */
         m_address = m_pc;
         read_memory8 ();
-        current_instruction = &m_cpu_isa[m_data & 0xff];
+        current_instruction = &m_cpu_isa.at (m_data);
         if (!current_instruction)
-            abort ();
+            throw m_data;
         
         /* Decode the current opcode instruction */
         m_load_address = current_instruction->addressing;
@@ -111,8 +128,7 @@ size_t cpu6502::step (size_t &executed_cycles)
         executed_cycles += cycles_used;
         consumed_bytes = current_instruction->bytes_consumed;            
         } catch (uint8_t invalid_opcode) {
-            std::cerr << fmt::format ("Stopped by a invalid instruction opcode 0x{:02x} during the decode event", 
-                invalid_opcode) << std::endl;
+            fmt::print ("Stopped by a invalid instruction opcode {:#02x} during the decode event\n", invalid_opcode);
             std::terminate ();
         }
     return consumed_bytes;
@@ -132,8 +148,8 @@ std::pair<size_t, size_t> cpu6502::step_count (size_t execute, size_t &executed_
 /* Display the internal CPU state */
 void cpu6502::printcs ()
 {
-    fmt::print ("6502 microprocessor informations:\nPC = 0x{:04x}, STACK POINTER = 0x{:04x}\n", m_pc, (uint16_t) m_s | 0x100);
-    fmt::print ("CPU register:\nA = 0x{:02x}, X = 0x{:02x}, Y = 0x{:02x}\n", m_a, m_x, m_y);
+    fmt::print ("6502 microprocessor informations:\nPC = {:#04x}, STACK POINTER = {:#04x}\n", m_pc, (uint16_t) m_s | 0x100);
+    fmt::print ("CPU register:\nA = {:#02x}, X = {:#02x}, Y = {:#02x}\n", m_a, m_x, m_y);
     fmt::print ("CPU status:\nCarry = {}\n", getflag (flags::CARRY));
 }
 
@@ -237,7 +253,7 @@ void cpu6502::read_memory8 ()
     uint8_t *memory = select_memory (m_address);
     m_data = memory[m_address & MAX_RAM_STORAGE];
 #endif
-    DEBUG_6502 ("0x{:02x} read from 0x{:04x} ({})\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
+    DEBUG_6502 ("{:#02x} read from 0x{:#x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::read_memory16 ()
@@ -264,7 +280,7 @@ void cpu6502::write_memory8 ()
     uint8_t *memory = select_memory (m_address);
     memory[m_address & MAX_RAM_STORAGE] = static_cast<uint8_t> (m_data);
 #endif
-    DEBUG_6502 ("0x{:02x} writted into 0x{:04x} ({})\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
+    DEBUG_6502 ("{:#02x} writted into {:#04x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::write_memory16 ()
@@ -280,21 +296,31 @@ void cpu6502::write_memory16 ()
 /* Add to the register A, a memory value and the carry flag */
 uint8_t cpu6502::cpu_adc ()
 {
-    uint16_t result;
+    uint16_t value;
     /* REDO: DECIMAL MODE NOT IMPLEMENTED */
     read_memory8 ();
-    result = m_a + m_data + getflag (flags::CARRY);
-    setflag (flags::CARRY, CHECK_CARRY (result, 0));
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
+    value = m_a + m_data + getflag (flags::CARRY);
     setflag (flags::ZERO, CHECK_ZERO (m_a));
+    
+    if (getflag (flags::DECIMAL)) {
+        if (((m_a & 0xf) + (m_data & 0xf) + getflag (flags::CARRY)) > 9)
+            value += 6;
+        if (value > 0x99)
+            value += 96;
+        setflag (flags::CARRY, (value > 0x99));
+    } else {
+        setflag (flags::CARRY, (CHECK_CARRY (value, 0)));
+    }
 
-    setflag (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, (uint8_t)result, m_data));
-    m_a = result & 0x00ff;
+    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
+    setflag (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, m_data, value));
+    
+    m_a = value & 0xff;
     return 0;
 }
 
 /*  Perform a bitwise AND operation with a memory value and the register
- *  A, and store the result back into A register
+ *  A, and store the value back into A register
 */
 uint8_t cpu6502::cpu_and ()
 {
@@ -772,7 +798,7 @@ uint8_t cpu6502::cpu_pla ()
 uint8_t cpu6502::cpu_plp ()
 {
     pop8 ();
-    m_p.status = static_cast<uint8_t>(m_data);
+    m_p.status = static_cast<uint8_t> (m_data);
     return 0;
 
 }
@@ -784,10 +810,9 @@ uint8_t cpu6502::cpu_rol ()
         m_data = m_a;
     else
         read_memory8 ();
-    auto value = (uint8_t)m_data;
-    uint16_t result = value << 1;
+    uint16_t value = ((uint8_t)m_data) << 1;
     /* 1001010 << 1 == 10010100 */
-    value |= (result >> 8) & 1;
+    value |= (value >> 8) & 1;
     /* 1001010 
      *       1 |=
      * 0010101
@@ -810,9 +835,8 @@ uint8_t cpu6502::cpu_ror ()
         m_data = m_a;
     else
         read_memory8 ();
-    auto value = (uint8_t)m_data;
-    auto result = value & 1;
-    m_data = result << 7;
+    auto carry_bit = m_data & 1;
+    m_data |= carry_bit << 7;
     if (m_use_accumulator)
         m_a = static_cast<uint8_t> (m_data);
     else
