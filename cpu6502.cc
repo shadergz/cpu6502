@@ -636,6 +636,11 @@ uint8_t cpu6502::cpu_eor ()
 {
     read_memory8 ();
     m_data ^= m_a;
+
+    /* The page may cross */
+    if (page_crossed (m_address, m_pc))
+        m_cycles_wasted++;
+
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
     setflag (flags::ZERO, CHECK_ZERO (m_data));
     return 0;
