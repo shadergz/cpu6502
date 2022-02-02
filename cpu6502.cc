@@ -111,7 +111,7 @@ size_t cpu6502::step (size_t &executed_cycles)
         m_address = m_pc;
         read_memory8 ();
         current_instruction = &m_cpu_isa.at (m_data);
-        if (!current_instruction)
+        if (!current_instruction || !current_instruction->instruction)
             throw m_data;
         
         /* Decode the current opcode instruction */
@@ -253,7 +253,7 @@ void cpu6502::read_memory8 ()
     uint8_t *memory = select_memory (m_address);
     m_data = memory[m_address & MAX_RAM_STORAGE];
 #endif
-    DEBUG_6502 ("{:#02x} read from 0x{:#x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
+    CPU6502_DBG ("{:#02x} read from 0x{:#x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::read_memory16 ()
@@ -280,7 +280,7 @@ void cpu6502::write_memory8 ()
     uint8_t *memory = select_memory (m_address);
     memory[m_address & MAX_RAM_STORAGE] = static_cast<uint8_t> (m_data);
 #endif
-    DEBUG_6502 ("{:#02x} writted into {:#04x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
+    CPU6502_DBG ("{:#02x} writted into {:#04x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::write_memory16 ()
@@ -475,7 +475,7 @@ uint8_t cpu6502::cpu_bpl ()
  */
 uint8_t cpu6502::cpu_brk ()
 {
-    DEBUG_6502 ("Executing BRK operation\n");
+    CPU6502_DBG ("Executing BRK operation\n");
     /* A extra byte is added to provide a reason for the break */
     m_data = m_pc + 1;
     push16 ();
@@ -696,8 +696,11 @@ uint8_t cpu6502::cpu_jsr ()
 /* Load the A register from a memory value */
 uint8_t cpu6502::cpu_lda ()
 {
+    CPU6502_DBG ("Executing LDA operation\n");
     read_memory8 ();
     m_a = static_cast<uint8_t> (m_data);
+    if (page_crossed (m_address, m_pc))
+        m_cycles_wasted++;
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
     setflag (flags::ZERO, CHECK_ZERO (m_a));
     return 0;
@@ -718,7 +721,7 @@ uint8_t cpu6502::cpu_ldx ()
 uint8_t cpu6502::cpu_ldy ()
 {
     read_memory8 ();
-    m_y = static_cast<uint8_t>(m_data);
+    m_y = static_cast<uint8_t> (m_data);
     setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
     setflag (flags::ZERO, CHECK_ZERO (m_y));
     return 0;

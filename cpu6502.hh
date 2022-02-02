@@ -15,13 +15,13 @@
 #if DEBUG
 #include <experimental/source_location>
 
-void inline LOG_MESSAGE (const std::string_view &format, 
+void inline LOG (const std::string_view &format, 
     const std::experimental::source_location &location = std::experimental::source_location::current())
 {
-    fmt::print (stderr, "{} {}() -> {:03d}+{:02d}: {}", location.file_name (), location.function_name (), location.line (), location.column (), format);
+    fmt::print (stderr, "{} {} () -> {:03d}+{:02d}: {}", location.file_name (), location.function_name (), location.line (), location.column (), format);
 }
-#define DEBUG_6502(msg_format, ...)\
-    LOG_MESSAGE (fmt::format (msg_format, ##__VA_ARGS__))
+#define CPU6502_DBG(msg_format, ...)\
+    LOG (fmt::format (msg_format, ##__VA_ARGS__))
 #else
 #define DEBUG_6502(msg_format, ...)\
     (void)msg_format
@@ -105,6 +105,16 @@ public:
     /* Processor status manipulation functions */
     bool getflag (flags flag) const;
     void setflag (flags flag, bool status);
+
+    /* Some get functions, commoly used into unit test code section */
+
+    auto get_register_a () const { return m_a; }
+    auto get_register_x () const { return m_x; }
+    auto get_register_y () const { return m_y; }
+    auto get_register_pc () const { return m_pc; }
+    auto get_register_s () const { return m_s; }
+    auto get_last_fetched_data () const { return m_data; }
+    auto get_last_acceded_address () const {return m_address; }
     
 private:
     /* Functions and variables used in the read/write data operations */
@@ -141,8 +151,8 @@ private:
 
     bool page_crossed (uint16_t first, uint16_t second)
     {
-        /* 0x`00´ff FIRST PAGE */ 
-        /* 0x`01´00 SECOND PAGE */
+        /* 0x`00´ff ONE PAGE */ 
+        /* 0x`01´00 ANOTHER PAGE */
         if ((first & 0xff00) != (second & 0xff00))
             return true;
         return false;
@@ -286,7 +296,7 @@ private:
     uint8_t cpu_tya ();
 
     /* Addressing modes operations */
-    void mem_none();
+    void mem_none ();
     void mem_a ();
     void mem_abs ();
     void mem_absx ();
@@ -305,8 +315,8 @@ private:
 
 #pragma region
     enum class opcode_instruction {
-        BRK = 0x00,         ORA_INDX = 0x01,    ORA_ZP = 0x05,      ASL_ZP = 0x06,      PHP_IMPL = 0x08,    ORA_IMM = 0x09,     ASL_ACC = 0x0a,
-        ORA_ABS = 0x0d,     ASL_ABS = 0x0e,     BPL_REL = 0x10,     ORA_INDY = 0x11,    ORA_ZPX = 0x15,     ASL_ZPX = 0x16,     CLC_IMPL = 0x18,
+        BRK      = 0x00,    ORA_INDX = 0x01,    ORA_ZP   = 0x05,    ASL_ZP   = 0x06,    PHP_IMPL = 0x08,    ORA_IMM = 0x09,     ASL_ACC  = 0x0a,
+        ORA_ABS  = 0x0d,    ASL_ABS  = 0x0e,    BPL_REL  = 0x10,    ORA_INDY = 0x11,    ORA_ZPX  = 0x15,    ASL_ZPX = 0x16,     CLC_IMPL = 0x18,
         ORA_ABSY = 0x19,    ORA_ABSX = 0x1d,    ASL_ABSX = 0x1e
     };
     typedef struct opcode_info_st {
@@ -324,9 +334,10 @@ private:
 
     using cpu = cpu6502;
     
-    std::array<opcode_info_t, 0xa0> const m_cpu_isa {{
+    std::array<opcode_info_t, 0xc0> const m_cpu_isa {{
+
         {&cpu::cpu_brk, &cpu::mem_impl, 7, 0, 1}, {&cpu::cpu_ora, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
-        {&cpu::cpu_ora, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zp,   5, 0, 2}, 
+        {&cpu::cpu_ora, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zp,   5, 0, 2}, {},
         {&cpu::cpu_php, &cpu::mem_impl, 3, 0, 1}, {&cpu::cpu_ora, &cpu::mem_imm,  2, 0, 2},
         {&cpu::cpu_asl, &cpu::mem_a,    2, 0, 1}, {}, {},
         {&cpu::cpu_ora, &cpu::mem_abs,  4, 0, 3}, {&cpu::cpu_asl, &cpu::mem_abs,  6, 0, 3}, {},
@@ -377,7 +388,25 @@ private:
         {&cpu::cpu_stx, &cpu::mem_zpy,  4, 0, 2}, {},
         {&cpu::cpu_tya, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_sta, &cpu::mem_absy, 5, 0, 3},
         {&cpu::cpu_txs, &cpu::mem_impl, 2, 0, 1}, {}, {},
-        {&cpu::cpu_sta, &cpu::mem_absx, 5, 0, 3}, {}, {}
+        {&cpu::cpu_sta, &cpu::mem_absx, 5, 0, 3}, {}, {},
+        {&cpu::cpu_ldy, &cpu::mem_imm,  2, 0, 2}, {&cpu::cpu_lda, &cpu::mem_indx, 6, 0, 2},
+        {&cpu::cpu_ldx, &cpu::mem_imm,  2, 0, 2}, {},
+        {&cpu::cpu_ldy, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_lda, &cpu::mem_zp,   3, 0, 2},
+        {&cpu::cpu_ldx, &cpu::mem_zp,   3, 0, 2}, {},
+        {&cpu::cpu_tay, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_lda, &cpu::mem_imm,  2, 0, 2},
+        {&cpu::cpu_tax, &cpu::mem_impl, 2, 0, 1}, {},
+
+        /* TODO: there's a bug here (2 elements it's outside from this array) */ 
+        
+        {&cpu::cpu_ldy, &cpu::mem_abs,  4, 0, 3}, {&cpu::cpu_lda, &cpu::mem_abs,  4, 0, 3},
+        {&cpu::cpu_ldx, &cpu::mem_abs,  4, 0, 3}, {},
+        {&cpu::cpu_bcs, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_lda, &cpu::mem_indy, 5, 1, 2}, {}, {},
+        {&cpu::cpu_ldy, &cpu::mem_zp,   4, 0, 2}, {&cpu::cpu_lda, &cpu::mem_zpx,  4, 0, 2},
+        {&cpu::cpu_lda, &cpu::mem_zpy,  4, 0, 2}, {},
+        {&cpu::cpu_clv, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_lda, &cpu::mem_absy, 4, 1, 3},
+        {&cpu::cpu_tsx, &cpu::mem_impl, 2, 0, 1}, {},
+        {&cpu::cpu_ldy, &cpu::mem_absx, 4, 1, 2}, {&cpu::cpu_lda, &cpu::mem_absx, 4, 1, 3},
+        {&cpu::cpu_ldx, &cpu::mem_absy, 4, 1, 3}, {}
     }};
 #pragma endregion "Opcode table"
 };
