@@ -25,15 +25,15 @@ cpu6502::cpu6502 (cpu_read read_function, cpu_write write_function)
 #else
 cpu6502::cpu6502 (uint8_t *ram, uint8_t *rom)
 {
+    assert (rom);
+    m_rom = rom;
+
 #if USE_INTERNAL_RAM
     memset (static_cast<void*> (m_ram.data ()), 0, MAX_RAM_STORAGE);
 #else
     assert (ram);
     m_ram = ram;
 #endif
-    assert (rom);
-    m_rom = rom;
-
     m_load_address = &cpu6502::mem_imm;
 }
 #endif
@@ -57,14 +57,14 @@ void cpu6502::reset ()
 
 void cpu6502::irq ()
 {
-    if (!getflag (flags::IRQ)) {
+    if (!getf (flags::IRQ)) {
         /* There's a interrupt to procedure (Doing it now) */
-        setflag (flags::BRK, false);
+        setf (flags::BRK, false);
         m_data = m_pc;
         push16 ();
         m_data = m_s;
         push8 ();
-        setflag (flags::IRQ, true);
+        setf (flags::IRQ, true);
         m_address = INTERRUPT_VECTOR_TABLE[static_cast<int> (ivt_index::IRQ_BRK)][0];
         read_memory16 ();
         m_pc = m_data;
@@ -73,12 +73,12 @@ void cpu6502::irq ()
 
 void cpu6502::nmi ()
 {
-    setflag (flags::BRK, false);
+    setf (flags::BRK, false);
     m_data = m_pc;
     push16 ();
     m_data = m_s;
     push8 ();
-    setflag (flags::IRQ, true);
+    setf (flags::IRQ, true);
     m_data = INTERRUPT_VECTOR_TABLE[static_cast<int> (ivt_index::NMI)][0];
     read_memory16 ();
     m_pc = m_data;
@@ -106,7 +106,7 @@ size_t cpu6502::step (size_t &executed_cycles)
     const opcode_info_t *current_instruction;
     uint8_t extra_cycles, cycles_used;
 
-    try {
+        try {
         /* Fetching the current instruction */
         m_address = m_pc;
         read_memory8 ();
@@ -125,12 +125,13 @@ size_t cpu6502::step (size_t &executed_cycles)
         if (current_instruction->can_exceeded)
             cycles_used += extra_cycles;
 
-        executed_cycles += cycles_used;
+        m_cycles_wasted += executed_cycles += cycles_used;
         consumed_bytes = current_instruction->bytes_consumed;            
         } catch (uint8_t invalid_opcode) {
-            fmt::print ("Stopped by a invalid instruction opcode {:#02x} during the decode event\n", invalid_opcode);
+            fmt::print (stderr, "Stopped by a invalid instruction opcode {:#x} during the decode event\n", invalid_opcode);
             std::terminate ();
         }
+
     return consumed_bytes;
 }
 
@@ -148,12 +149,12 @@ std::pair<size_t, size_t> cpu6502::step_count (size_t execute, size_t &executed_
 /* Display the internal CPU state */
 void cpu6502::printcs ()
 {
-    fmt::print ("6502 microprocessor informations:\nPC = {:#04x}, STACK POINTER = {:#04x}\n", m_pc, (uint16_t) m_s | 0x100);
-    fmt::print ("CPU register:\nA = {:#02x}, X = {:#02x}, Y = {:#02x}\n", m_a, m_x, m_y);
-    fmt::print ("CPU status:\nCarry = {}\n", getflag (flags::CARRY));
+    fmt::print ("6502 microprocessor informations:\nPC = {:#x}, STACK POINTER = {:#x}\n", m_pc, (uint16_t) m_s | 0x100);
+    fmt::print ("CPU register:\nA = {:#x}, X = {:#x}, Y = {:#x}\n", m_a, m_x, m_y);
+    fmt::print ("CPU status:\nCarry = {}\n", getf (flags::CARRY));
 }
 
-bool cpu6502::getflag (flags flag) const
+bool cpu6502::getf (flags flag) const
 {
     switch (flag) {
     case flags::CARRY:
@@ -198,19 +199,17 @@ constexpr bool CHECK_OVERFLOW (uint16_t x, uint16_t y, uint16_t z)
      *  Z = 00001010
     */
     return (
-        
         ((x ^ y)
         /* = 10000010 */
         & 0x80)
         /* = (1)00000000 = true = 1 */
         & ~(x ^ z)
         /* = X ^ Y = 11110010 ~ = 00001101 = (00000001 & 00001101) = 1 (OVERFLOW) */
-        
     );
 }
 
 /* Control flags manipulation */
-void cpu6502::setflag (flags flag, bool status)
+void cpu6502::setf (flags flag, bool status)
 {
     switch (flag) {
     case flags::CARRY:
@@ -253,7 +252,7 @@ void cpu6502::read_memory8 ()
     uint8_t *memory = select_memory (m_address);
     m_data = memory[m_address & MAX_RAM_STORAGE];
 #endif
-    CPU6502_DBG ("{:#02x} read from 0x{:#x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
+    CPU6502_DBG ("{:#x} read from {:#x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::read_memory16 ()
@@ -299,24 +298,24 @@ uint8_t cpu6502::cpu_adc ()
     uint16_t value;
     /* REDO: DECIMAL MODE NOT IMPLEMENTED */
     read_memory8 ();
-    value = m_a + m_data + getflag (flags::CARRY);
-    setflag (flags::ZERO, CHECK_ZERO (m_a));
+    value = m_a + m_data + getf (flags::CARRY);
+    setf (flags::ZERO, CHECK_ZERO (m_a));
     
-    if (getflag (flags::DECIMAL)) {
-        if (((m_a & 0xf) + (m_data & 0xf) + getflag (flags::CARRY)) > 9)
+    if (getf (flags::DECIMAL)) {
+        if (((m_a & 0x0f) + (m_data & 0x0f) + getf (flags::CARRY)) > 9)
             value += 6;
         if (value > 0x99)
             value += 96;
-        setflag (flags::CARRY, (value > 0x99));
+        setf (flags::CARRY, (value > 0x99));
     } else {
-        setflag (flags::CARRY, (CHECK_CARRY (value, 0)));
+        setf (flags::CARRY, (CHECK_CARRY (value, 0)));
     }
 
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
-    setflag (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, m_data, value));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
+    setf (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, m_data, value));
     
     m_a = value & 0xff;
-    return 0;
+    return page_crossed (m_address, m_pc);
 }
 
 /*  Perform a bitwise AND operation with a memory value and the register
@@ -326,10 +325,10 @@ uint8_t cpu6502::cpu_and ()
 {
     read_memory8 ();
     m_a &= ((uint8_t)m_data);
-    setflag (flags::ZERO, CHECK_ZERO (m_a));
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
+    setf (flags::ZERO, CHECK_ZERO (m_a));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
 
-    return 0;
+    return  page_crossed (m_address, m_pc);
 }
 
 /* Perform a shift left operation */
@@ -339,9 +338,9 @@ uint8_t cpu6502::cpu_asl ()
     auto old_value = m_data;
 
     m_data <<= 1;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
-    setflag (flags::ZERO, CHECK_ZERO (m_data));
-    setflag (flags::CARRY, CHECK_CARRY ((uint8_t)m_data, (uint8_t)old_value));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
+    setf (flags::ZERO, CHECK_ZERO (m_data));
+    setf (flags::CARRY, CHECK_CARRY ((uint8_t)m_data, (uint8_t)old_value));
     write_memory8 ();
 
     return 0;
@@ -351,57 +350,44 @@ uint8_t cpu6502::cpu_asl ()
 uint8_t cpu6502::cpu_bcc ()
 {
     uint16_t branch_address;
-    uint8_t extra_cycles = 1;
 
     read_memory8 ();
-    if (!getflag (flags::CARRY)) {
+    if (!getf (flags::CARRY)) {
         branch_address = m_pc + m_data;
-        if (page_crossed (branch_address, m_pc))
-            extra_cycles++;
-
         m_pc = branch_address;
     }
-    return extra_cycles;
+    return page_crossed (branch_address, m_pc) + 1;
 }
 
 /* Take the branch if the carry flag is setted to 1 */
 uint8_t cpu6502::cpu_bcs ()
 {
     uint16_t branch_address;
-    uint8_t extra_cycles = 1;
 
     read_memory8 ();
-    if (getflag (flags::CARRY)) {
+    if (getf (flags::CARRY)) {
         branch_address = m_pc + m_data;
-        if (page_crossed (branch_address, m_pc))
-            extra_cycles++;
-
         m_pc = branch_address;
     }
-    return extra_cycles;
+    return page_crossed (branch_address, m_pc) + 1;;
 }
 
 /* Take the branch if the zero flag is setted to 1 */
 uint8_t cpu6502::cpu_beq ()
 {
     uint16_t branch_address;
-    uint8_t extra_cycles = 1;
 
     read_memory8 ();
-    if (getflag (flags::ZERO)) {
-        branch_address = m_pc + m_data;
-        if (page_crossed (branch_address, m_pc))
-            extra_cycles++;
-            
+    if (getf (flags::ZERO)) {
+        branch_address = m_pc + m_data;  
         m_pc = branch_address;
     }
-    return extra_cycles;
+    return page_crossed (branch_address, m_pc) + 1;;
 }
 
 /*  Perform a bit check, the msb (7th bit) is deslocated to the negative flag, and the 
  *  6th bit is deslocated to the overflow flag
 */
-
 constexpr bool CPU_BIT_OVER (uint16_t x)
 {
     return (x & (6 << 1));   
@@ -410,83 +396,69 @@ constexpr bool CPU_BIT_OVER (uint16_t x)
 uint8_t cpu6502::cpu_bit ()
 {
     read_memory8 ();
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
     /* Trying to force set the overflow flag with the 6th bit of the fetched data */
-    setflag (flags::OVER_FLOW, CPU_BIT_OVER (m_data));
-    setflag (flags::ZERO, CHECK_ZERO (((uint8_t)m_data) & m_a));
+    setf (flags::OVER_FLOW, CPU_BIT_OVER (m_data));
+    setf (flags::ZERO, CHECK_ZERO (((uint8_t)m_data) & m_a));
 
     return 0;
-#undef CPU_BIT_OVER
 }
 
 /* Take the branch if the negative flag is setted to 1 */
 uint8_t cpu6502::cpu_bmi ()
 {
     uint16_t branch_address;
-    uint8_t extra_cycles = 1;
-
     read_memory8 ();
-    if (getflag (flags::NEGATIVE)) {
+
+    if (getf (flags::NEGATIVE)) {
         branch_address = m_pc + m_data;
-        if (page_crossed (branch_address, m_pc))
-            extra_cycles++;
-            
         m_pc = branch_address;
     }
-    return extra_cycles;
+    return  page_crossed (branch_address, m_pc) + 1;;
 }
 
 /* Take the branch if the zero flag is setted to 0 */
 uint8_t cpu6502::cpu_bne ()
 {
     uint16_t branch_address;
-    uint8_t extra_cycles = 1;
-
     read_memory8 ();
-    if (!getflag (flags::ZERO)) {
-        branch_address = m_pc + m_data;
-        if (page_crossed (branch_address, m_pc))
-            extra_cycles++;
-            
+
+    if (!getf (flags::ZERO)) {
+        branch_address = m_pc + m_data;    
         m_pc = branch_address;
     }
-    return extra_cycles;
+    return page_crossed (branch_address, m_pc) + 1;
 }
 
 /* Take the branch if the negative flag is setted to 0 */
 uint8_t cpu6502::cpu_bpl ()
 {
     uint16_t branch_address;
-    uint8_t extra_cycles = 1;
 
     read_memory8 ();
-    if (!getflag (flags::NEGATIVE)) {
+    if (!getf (flags::NEGATIVE)) {
         branch_address = m_pc + m_data;
-        if (page_crossed (branch_address, m_pc))
-            extra_cycles++;
-            
         m_pc = branch_address;
     }
-    return extra_cycles;
+    return page_crossed (branch_address, m_pc) + 1;
 }
 
 /*  Generate a interrupt just like the hardware IRQ, the actual flag and the program counter is pushed 
  *  to the stack setted to the next location (PC + 2)
- */
+*/
 uint8_t cpu6502::cpu_brk ()
 {
-    CPU6502_DBG ("Executing BRK operation\n");
     /* A extra byte is added to provide a reason for the break */
     m_data = m_pc + 1;
     push16 ();
-    setflag (flags::BRK, true);
+    setf (flags::BRK, true);
     /* Push the status flag into the stack with the BRK flag setted to 1 */
     m_data = m_s;
     push8 ();
-    setflag (flags::BRK, false);
+    setf (flags::BRK, false);
 
     /* Disable the interrupt flag (The CPU need to handler this interrupt before accept another IRQ) */
-    setflag (flags::IRQ, true);
+    setf (flags::IRQ, true);
 
     return 0;
 }
@@ -495,61 +467,53 @@ uint8_t cpu6502::cpu_brk ()
 uint8_t cpu6502::cpu_bvc ()
 {
     uint16_t branch_address;
-    uint8_t extra_cycles = 1;
 
     read_memory8 ();
-    if (!getflag (flags::OVER_FLOW)) {
-        branch_address = m_pc + m_data;
-        if (page_crossed (branch_address, m_pc))
-            extra_cycles++;
-            
+    if (!getf (flags::OVER_FLOW)) {
+        branch_address = m_pc + m_data; 
         m_pc = branch_address;
     }
-    return extra_cycles;
+    return page_crossed (branch_address, m_pc) + 1;
 }
 
 /* Take the branch if the overflow flag is setted to 1 */
 uint8_t cpu6502::cpu_bvs ()
 {
     uint16_t branch_address;
-    uint8_t extra_cycles = 1;
-
     read_memory8 ();
-    if (getflag (flags::OVER_FLOW)) {
+
+    if (getf (flags::OVER_FLOW)) {
         branch_address = m_pc + m_data;
-        if (page_crossed (branch_address, m_pc))
-            extra_cycles++;
-            
         m_pc = branch_address;
     }
-    return extra_cycles;
+    return page_crossed (branch_address, m_pc) + 1;
 }
 
 /* Clean the carry flag */
 uint8_t cpu6502::cpu_clc ()
 {
-    setflag (flags::CARRY, false);
+    setf (flags::CARRY, false);
     return 0;
 }
 
 /* Clean the decimal flag */
 uint8_t cpu6502::cpu_cld ()
 {
-    setflag (flags::DECIMAL, false);
+    setf (flags::DECIMAL, false);
     return 0;
 }
 
 /* Clean the interrupt flag */
 uint8_t cpu6502::cpu_cli ()
 {
-    setflag (flags::IRQ, false);
+    setf (flags::IRQ, false);
     return 0;
 }
 
 /* Clean the overflow flag */
 uint8_t cpu6502::cpu_clv ()
 {
-    setflag (flags::OVER_FLOW, false);
+    setf (flags::OVER_FLOW, false);
     return 0;
 }
 
@@ -565,15 +529,15 @@ uint8_t cpu6502::cpu_cmp ()
     read_memory8 ();
     /*
         IF VALUE >  0    ->  REG < MEMORY
-        IF VALUE == 0   ->  REG == MEMORY
+        IF VALUE == 0    ->  REG == MEMORY
         IF VALUE <  0    ->  REG > MEMORY
     */
-    auto value = ((uint8_t)m_data) - m_a;
+    uint16_t value = ((uint8_t)m_data) - m_a;
 
-    setflag (flags::ZERO, CHECK_ZERO (value));
-    setflag (flags::CARRY, CHECK_ZERO (value));
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (value));
-    return 0;
+    setf (flags::ZERO, CHECK_ZERO (value));
+    setf (flags::CARRY, CHECK_ZERO (value));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (value));
+    return page_crossed (m_address, m_pc);
 }
 
 /* Compare a memory value with the X index register */
@@ -582,9 +546,9 @@ uint8_t cpu6502::cpu_cpx ()
     read_memory8 ();
     auto value = (uint8_t)(m_data) - m_x;
 
-    setflag (flags::ZERO, CHECK_ZERO (value));
-    setflag (flags::CARRY, CHECK_ZERO (value));
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (value));
+    setf (flags::ZERO, CHECK_ZERO (value));
+    setf (flags::CARRY, CHECK_ZERO (value));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (value));
     return 0;
 }
 
@@ -594,9 +558,9 @@ uint8_t cpu6502::cpu_cpy ()
     read_memory8 ();
     auto value = (uint8_t)m_data - m_y;
 
-    setflag (flags::ZERO, CHECK_ZERO (value));
-    setflag (flags::CARRY, CHECK_ZERO (value));
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (value));
+    setf (flags::ZERO, CHECK_ZERO (value));
+    setf (flags::CARRY, CHECK_ZERO (value));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (value));
     return 0;
 }
 
@@ -605,8 +569,8 @@ uint8_t cpu6502::cpu_dec ()
 {
     read_memory8 ();
     m_data--;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
-    setflag (flags::ZERO, CHECK_ZERO (m_data));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
+    setf (flags::ZERO, CHECK_ZERO (m_data));
     write_memory8 ();
     return 0;
 }
@@ -615,8 +579,8 @@ uint8_t cpu6502::cpu_dec ()
 uint8_t cpu6502::cpu_dex ()
 {
     m_x--;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
-    setflag (flags::ZERO, CHECK_ZERO (m_x));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
+    setf (flags::ZERO, CHECK_ZERO (m_x));
     return 0;
 }
 
@@ -624,8 +588,8 @@ uint8_t cpu6502::cpu_dex ()
 uint8_t cpu6502::cpu_dey ()
 {
     m_y--;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
-    setflag (flags::ZERO, CHECK_ZERO (m_y));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
+    setf (flags::ZERO, CHECK_ZERO (m_y));
     return 0;
 }
 
@@ -637,13 +601,9 @@ uint8_t cpu6502::cpu_eor ()
     read_memory8 ();
     m_data ^= m_a;
 
-    /* The page may cross */
-    if (page_crossed (m_address, m_pc))
-        m_cycles_wasted++;
-
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
-    setflag (flags::ZERO, CHECK_ZERO (m_data));
-    return 0;
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
+    setf (flags::ZERO, CHECK_ZERO (m_data));
+    return page_crossed (m_address, m_pc);
 }
 
 /* Increment a memory value */
@@ -651,8 +611,8 @@ uint8_t cpu6502::cpu_inc ()
 {
     read_memory8 ();
     m_data++;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
-    setflag (flags::ZERO, CHECK_ZERO (m_data));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
+    setf (flags::ZERO, CHECK_ZERO (m_data));
     write_memory8 ();
     return 0;
 }
@@ -661,8 +621,8 @@ uint8_t cpu6502::cpu_inc ()
 uint8_t cpu6502::cpu_inx ()
 {
     m_x++;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
-    setflag (flags::ZERO, CHECK_ZERO (m_x));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
+    setf (flags::ZERO, CHECK_ZERO (m_x));
     return 0;
 }
 
@@ -670,8 +630,8 @@ uint8_t cpu6502::cpu_inx ()
 uint8_t cpu6502::cpu_iny ()
 {
     m_y++;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
-    setflag (flags::ZERO, CHECK_ZERO (m_y));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
+    setf (flags::ZERO, CHECK_ZERO (m_y));
     return 0;
 }
 
@@ -696,14 +656,12 @@ uint8_t cpu6502::cpu_jsr ()
 /* Load the A register from a memory value */
 uint8_t cpu6502::cpu_lda ()
 {
-    CPU6502_DBG ("Executing LDA operation\n");
     read_memory8 ();
     m_a = static_cast<uint8_t> (m_data);
-    if (page_crossed (m_address, m_pc))
-        m_cycles_wasted++;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
-    setflag (flags::ZERO, CHECK_ZERO (m_a));
-    return 0;
+
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
+    setf (flags::ZERO, CHECK_ZERO (m_a));
+    return page_crossed (m_address, m_pc);
 
 }
 
@@ -712,9 +670,9 @@ uint8_t cpu6502::cpu_ldx ()
 {
     read_memory8 ();
     m_x = static_cast<uint8_t> (m_data);
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
-    setflag (flags::ZERO, CHECK_ZERO (m_x));
-    return 0;
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
+    setf (flags::ZERO, CHECK_ZERO (m_x));
+    return page_crossed (m_address, m_pc);
 }
 
 /* Load the Y register from a memory value */
@@ -722,25 +680,27 @@ uint8_t cpu6502::cpu_ldy ()
 {
     read_memory8 ();
     m_y = static_cast<uint8_t> (m_data);
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
-    setflag (flags::ZERO, CHECK_ZERO (m_y));
-    return 0;
-
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
+    setf (flags::ZERO, CHECK_ZERO (m_y));
+    return page_crossed (m_address, m_pc);
 }
 
 /* Perform a shift right bitwise operation with a memory value or A register */
 uint8_t cpu6502::cpu_lsr ()
 {
+    uint16_t old_value;
+
     if (m_use_accumulator)
         m_data = m_a;
     else
         read_memory8 ();
-    auto old_value = m_data;
+    
+    old_value = m_data;
 
     m_data >>= 1;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
-    setflag (flags::ZERO, CHECK_ZERO (m_data));
-    setflag (flags::CARRY, CHECK_CARRY (m_data, old_value));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
+    setf (flags::ZERO, CHECK_ZERO (m_data));
+    setf (flags::CARRY, CHECK_CARRY (m_data, old_value));
 
     if (m_use_accumulator)
         m_a = static_cast<uint8_t> (m_data);
@@ -761,15 +721,13 @@ uint8_t cpu6502::cpu_ora ()
 {
     read_memory8 ();
     
-    /* TODO: Maybe the page can cross */
     m_data |= m_a;
-
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
-    setflag (flags::ZERO, CHECK_ZERO (m_data));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
+    setf (flags::ZERO, CHECK_ZERO (m_data));
 
     write_memory8 ();
 
-    return 0;
+    return page_crossed (m_address, m_pc);
 }
 
 /* Push the accumulator to the stack */
@@ -787,7 +745,6 @@ uint8_t cpu6502::cpu_php ()
     m_p.reserved = true;
     m_data = m_p.status;
     push8 ();
-
     return 0;
 }
 
@@ -796,10 +753,11 @@ uint8_t cpu6502::cpu_pla ()
 {
     pop8 ();
     m_a = static_cast<uint8_t> (m_data);
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
-    setflag (flags::ZERO, CHECK_ZERO (m_a));
+    
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
+    setf (flags::ZERO, CHECK_ZERO (m_a));
+    
     return 0;
-
 }
 
 /* Put the top level stack value into the status register */
@@ -878,39 +836,39 @@ uint8_t cpu6502::cpu_rts ()
 uint8_t cpu6502::cpu_sbc ()
 {
     read_memory8 ();
-    uint16_t value = m_a - m_data - getflag (flags::CARRY);
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (value));
-    setflag (flags::ZERO, CHECK_ZERO (value));
-    setflag (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, value, m_data));
-    if (getflag (flags::DECIMAL)) {
-        if (((m_a & 0x0f) - getflag (flags::CARRY)) < (m_data & 0x0f))
+    uint16_t value = m_a - m_data - getf (flags::CARRY);
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (value));
+    setf (flags::ZERO, CHECK_ZERO (value));
+    setf (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, value, m_data));
+    if (getf (flags::DECIMAL)) {
+        if (((m_a & 0x0f) - getf (flags::CARRY)) < (m_data & 0x0f))
             value -= 6;
         if (value > 0x99)
             value -= 0x60;
     }
-    setflag (flags::CARRY, value < 0x100);
+    setf (flags::CARRY, value < 0x100);
     m_a = value & 0xff;
-    return 0;
+    return page_crossed (m_address, m_pc);
 }
 
 /* Set the carry flag to 1 */
 uint8_t cpu6502::cpu_sec ()
 {
-    setflag (flags::CARRY, true);
+    setf (flags::CARRY, true);
     return 0;
 }
 
 /* Set the decimal flag to 1 */
 uint8_t cpu6502::cpu_sed ()
 {
-    setflag (flags::DECIMAL, true);
+    setf (flags::DECIMAL, true);
     return 0;
 }
 
 /* Set the interrupt flag to 1 */
 uint8_t cpu6502::cpu_sei ()
 {
-    setflag (flags::IRQ, true);
+    setf (flags::IRQ, true);
     return 0;
 }
 
@@ -942,8 +900,8 @@ uint8_t cpu6502::cpu_sty ()
 uint8_t cpu6502::cpu_tax ()
 {
     m_x = m_a;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
-    setflag (flags::ZERO, CHECK_ZERO (m_x));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
+    setf (flags::ZERO, CHECK_ZERO (m_x));
     return 0;
 }
 
@@ -951,8 +909,8 @@ uint8_t cpu6502::cpu_tax ()
 uint8_t cpu6502::cpu_tay ()
 {
     m_y = m_a;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
-    setflag (flags::ZERO, CHECK_ZERO (m_y));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_y));
+    setf (flags::ZERO, CHECK_ZERO (m_y));
     return 0;
 }
 
@@ -960,8 +918,8 @@ uint8_t cpu6502::cpu_tay ()
 uint8_t cpu6502::cpu_tsx ()
 {
     m_x = m_s;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
-    setflag (flags::ZERO, CHECK_ZERO (m_x));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
+    setf (flags::ZERO, CHECK_ZERO (m_x));
     return 0;
 }
 
@@ -969,8 +927,8 @@ uint8_t cpu6502::cpu_tsx ()
 uint8_t cpu6502::cpu_txa ()
 {
     m_a = m_x;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE(m_x));
-    setflag (flags::ZERO, CHECK_ZERO(m_x));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE(m_x));
+    setf (flags::ZERO, CHECK_ZERO(m_x));
     return 0;
 }
 
@@ -985,8 +943,8 @@ uint8_t cpu6502::cpu_txs ()
 uint8_t cpu6502::cpu_tya ()
 {
     m_a = m_y;
-    setflag (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
-    setflag (flags::ZERO, CHECK_ZERO (m_x));
+    setf (flags::NEGATIVE, CHECK_NEGATIVE (m_x));
+    setf (flags::ZERO, CHECK_ZERO (m_x));
     return 0;
 }
 

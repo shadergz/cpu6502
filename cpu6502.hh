@@ -103,8 +103,8 @@ public:
     std::pair<size_t, size_t> step_count (size_t cycles_count, size_t &executed_cycles);
 
     /* Processor status manipulation functions */
-    bool getflag (flags flag) const;
-    void setflag (flags flag, bool status);
+    bool getf (flags flag) const;
+    void setf (flags flag, bool status);
 
     /* Some get functions, commoly used into unit test code section */
 
@@ -169,7 +169,7 @@ private:
     void push16 ()
     {
         push8 ();
-        m_data &= m_data >> 8;
+        m_data >>= 8;
         push8 ();
     }
 
@@ -321,9 +321,9 @@ private:
     };
     typedef struct opcode_info_st {
         /* Referenced function to be executed */
-        uint8_t (cpu6502::* instruction) (void);
+        uint8_t (cpu6502::* instruction) ();
         /* The addressing mode needed to be performed until the operation call */
-        void (cpu6502::* addressing) (void);
+        void (cpu6502::* addressing) ();
         /* The count of cycles wasted to execute the current instruction */
         uint8_t cycles_wasted;
         /* The switch to advice the CPU that the current instruction can extrapolate the wasted cycles */
