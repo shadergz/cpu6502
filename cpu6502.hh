@@ -36,8 +36,12 @@ void inline LOG (const std::string_view &format,
 constexpr uint16_t 
     /* The start address location for the stack pointer, the stack will growing from 0x1ff to 0x100 */
     START_STACK_ADDRESS = 0x1ff,
+
+    /* The base stack address */
     BASE_STACK_ADDRESS = 0x100,
+    /* Default max ram size (can be change normally by the developer) */
     MAX_RAM_STORAGE = 0x7fff,
+    /* Max rom storage */
     MAX_ROM_STORAGE = 0xffff - MAX_RAM_STORAGE;
 
 /* The count of official 6502 instructions count */
@@ -49,15 +53,20 @@ constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
 enum class ivt_index {ABORT = 0, COP, IRQ_BRK, NMI, RESET};
 
 constexpr uint16_t INTERRUPT_VECTOR_TABLE[5][2] = {
+    /* ABORT */
     {0xfff8, 0xfff9},
+    /* COP (UNUSED) */
     {0xfff4, 0xfff5},
+    /* IRQ AND BRK */
     {0xfffe, 0xffff},
+    /* NMI REQUEST */
     {0xfffa, 0xfffb},
+    /* RESET */
     {0xfffc, 0xfffd}
 };
 
 /*
-    6502 Memory layout
+6502 Memory layout
     [END ROM]
     [0xffff]
     |INT VECTORS|
@@ -85,7 +94,7 @@ public:
 #endif
     ~cpu6502 () = default;
 
-    enum class flags { CARRY = 0, ZERO, IRQ, DECIMAL, BRK, OVER_FLOW, NEGATIVE };
+    enum class flags { CARRY = 0, ZERO, IRQ, DECIMAL, BRK, OVERFLOW, NEGATIVE };
 
     void reset ();
     void printcs ();
@@ -335,7 +344,6 @@ private:
     using cpu = cpu6502;
     
     std::array<opcode_info_t, 0xc0> const m_cpu_isa {{
-
         {&cpu::cpu_brk, &cpu::mem_impl, 7, 0, 1}, {&cpu::cpu_ora, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
         {&cpu::cpu_ora, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zp,   5, 0, 2}, {},
         {&cpu::cpu_php, &cpu::mem_impl, 3, 0, 1}, {&cpu::cpu_ora, &cpu::mem_imm,  2, 0, 2},

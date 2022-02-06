@@ -16,6 +16,8 @@ static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom {};
 
 static size_t executed = 0, bytes_used = 0, executed_cycles = 0;
 
+/* CPU callback functions definition */
+
 uint8_t cpu_6502_read (uint16_t address)
 {
     if (address <= MAX_RAM_STORAGE)
@@ -27,6 +29,8 @@ void cpu_6502_write (uint16_t address, uint8_t data)
 {
     cpu_ram[address & MAX_RAM_STORAGE] = data;
 }
+
+/* CPU test functions */
 
 void TEST_cpu_PUSH (std::shared_ptr<cpu6502> cpu)
 {
@@ -55,7 +59,5 @@ int main ()
     TEST_cpu_LOAD (cpu_6502);
 
     fmt::print ("Executed instructions: {}, Bytes read: {}, Cycles used {}\n", executed, bytes_used, executed_cycles);
-    cpu_6502->printcs ();
-
     return 0;
 }

@@ -151,7 +151,10 @@ void cpu6502::printcs ()
 {
     fmt::print ("6502 microprocessor informations:\nPC = {:#x}, STACK POINTER = {:#x}\n", m_pc, (uint16_t) m_s | 0x100);
     fmt::print ("CPU register:\nA = {:#x}, X = {:#x}, Y = {:#x}\n", m_a, m_x, m_y);
-    fmt::print ("CPU status:\nCarry = {}\n", getf (flags::CARRY));
+    fmt::print ("CPU status:\nCarry = {}, Zero = {}, IRQ = {}, Decimal = {}, BRK = {}, Overflow = {}, Negative = {}\n", 
+        getf (flags::CARRY), getf (flags::ZERO), getf (flags::IRQ), getf (flags::DECIMAL),
+        getf (flags::BRK),   getf (flags::OVERFLOW), getf (flags::NEGATIVE)
+    );
 }
 
 bool cpu6502::getf (flags flag) const
@@ -167,7 +170,7 @@ bool cpu6502::getf (flags flag) const
         return m_p.decimal;
     case flags::BRK:
         return m_p.brk;
-    case flags::OVER_FLOW:
+    case flags::OVERFLOW:
         return m_p.overflow;
     case flags::NEGATIVE:
         return m_p.negative;
@@ -227,7 +230,7 @@ void cpu6502::setf (flags flag, bool status)
     case flags::BRK:
         m_p.brk = status;
         return;
-    case flags::OVER_FLOW:
+    case flags::OVERFLOW:
         m_p.overflow = status;
         return;
     case flags::NEGATIVE:
@@ -312,7 +315,7 @@ uint8_t cpu6502::cpu_adc ()
     }
 
     setf (flags::NEGATIVE, CHECK_NEGATIVE (m_a));
-    setf (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, m_data, value));
+    setf (flags::OVERFLOW, CHECK_OVERFLOW (m_a, m_data, value));
     
     m_a = value & 0xff;
     return page_crossed (m_address, m_pc);
@@ -398,7 +401,7 @@ uint8_t cpu6502::cpu_bit ()
     read_memory8 ();
     setf (flags::NEGATIVE, CHECK_NEGATIVE (m_data));
     /* Trying to force set the overflow flag with the 6th bit of the fetched data */
-    setf (flags::OVER_FLOW, CPU_BIT_OVER (m_data));
+    setf (flags::OVERFLOW, CPU_BIT_OVER (m_data));
     setf (flags::ZERO, CHECK_ZERO (((uint8_t)m_data) & m_a));
 
     return 0;
@@ -469,7 +472,7 @@ uint8_t cpu6502::cpu_bvc ()
     uint16_t branch_address;
 
     read_memory8 ();
-    if (!getf (flags::OVER_FLOW)) {
+    if (!getf (flags::OVERFLOW)) {
         branch_address = m_pc + m_data; 
         m_pc = branch_address;
     }
@@ -482,7 +485,7 @@ uint8_t cpu6502::cpu_bvs ()
     uint16_t branch_address;
     read_memory8 ();
 
-    if (getf (flags::OVER_FLOW)) {
+    if (getf (flags::OVERFLOW)) {
         branch_address = m_pc + m_data;
         m_pc = branch_address;
     }
@@ -513,7 +516,7 @@ uint8_t cpu6502::cpu_cli ()
 /* Clean the overflow flag */
 uint8_t cpu6502::cpu_clv ()
 {
-    setf (flags::OVER_FLOW, false);
+    setf (flags::OVERFLOW, false);
     return 0;
 }
 
@@ -839,7 +842,7 @@ uint8_t cpu6502::cpu_sbc ()
     uint16_t value = m_a - m_data - getf (flags::CARRY);
     setf (flags::NEGATIVE, CHECK_NEGATIVE (value));
     setf (flags::ZERO, CHECK_ZERO (value));
-    setf (flags::OVER_FLOW, CHECK_OVERFLOW (m_a, value, m_data));
+    setf (flags::OVERFLOW, CHECK_OVERFLOW (m_a, value, m_data));
     if (getf (flags::DECIMAL)) {
         if (((m_a & 0x0f) - getf (flags::CARRY)) < (m_data & 0x0f))
             value -= 6;
