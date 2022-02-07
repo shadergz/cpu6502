@@ -64,13 +64,11 @@ typedef uint8_t (*cpu_read) (uint16_t);
 typedef void (*cpu_write) (uint16_t, uint8_t);
 ```
 
-> Simple examples of callback functions
+> Simple example of callback functions
 
 ```cc
 static std::array<uint8_t, MAX_RAM_STORAGE> cpu_ram{};
-static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom {};
-
-static size_t executed = 0, bytes_used = 0, executed_cycles = 0;
+static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom{};
 
 /* CPU callback functions definition */
 

@@ -47,10 +47,12 @@ constexpr uint16_t
 /* The count of official 6502 instructions count */
 constexpr unsigned CPU_6502_INSTRUCTION_COUNT = 151;
 
-/* The status flag after the reset signal */
+/* The status after the reset signal */
 constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
 
-enum class ivt_index {ABORT = 0, COP, IRQ_BRK, NMI, RESET};
+enum class ivt_index { ABORT = 0, COP, IRQ_BRK, NMI, RESET };
+enum class CPU_status { CARRY = 0, ZERO, IRQ, DECIMAL, BRK, OVERFLOW, NEGATIVE };
+enum class CPU_content { REG_A = 0, REG_X, REG_Y, PC, SP, DATA, ADDRESS };
 
 constexpr uint16_t INTERRUPT_VECTOR_TABLE[5][2] = {
     /* ABORT */
@@ -94,8 +96,6 @@ public:
 #endif
     ~cpu6502 () = default;
 
-    enum class flags { CARRY = 0, ZERO, IRQ, DECIMAL, BRK, OVERFLOW, NEGATIVE };
-
     void reset ();
     void printcs ();
 
@@ -112,8 +112,8 @@ public:
     std::pair<size_t, size_t> step_count (size_t cycles_count, size_t &executed_cycles);
 
     /* Processor status manipulation functions */
-    bool getf (flags flag) const;
-    void setf (flags flag, bool status);
+    bool getf (CPU_status status) const;
+    void setf (CPU_status status, bool state);
 
     /* Some get functions, commoly used into unit test code section */
 
@@ -123,7 +123,29 @@ public:
     auto get_register_pc () const { return m_pc; }
     auto get_register_s () const { return m_s; }
     auto get_last_fetched_data () const { return m_data; }
-    auto get_last_acceded_address () const {return m_address; }
+    auto get_last_acceded_address () const { return m_address; }
+    
+    const uint16_t operator[] (CPU_content content) const
+    {
+        switch (content) {
+        case CPU_content::REG_A:
+            return m_a;
+        case CPU_content::REG_X:
+            return m_x;
+        case CPU_content::REG_Y:
+            return m_y;
+        case CPU_content::PC:
+            return m_pc;
+        case CPU_content::SP:
+            return m_s;
+        case CPU_content::DATA:
+            return m_data;
+        case CPU_content::ADDRESS:
+            return m_address;
+        default:
+            return {};
+        }
+    }
     
 private:
     /* Functions and variables used in the read/write data operations */
@@ -138,7 +160,7 @@ private:
 #else
     constexpr uint8_t* select_memory (uint16_t address)
     {
-        uint8_t *memory = nullptr;
+        uint8_t *memory{};
         if (address <= MAX_RAM_STORAGE)
             memory = m_ram;
         else
@@ -234,7 +256,7 @@ private:
     /* All cycles wasted will be stored into this variable */
     uint64_t m_cycles_wasted{};
 
-    /*  A specif flag to determine if the instruction will use the accumulator register 
+    /*  A specif status to determine if the instruction will use the accumulator register 
      *  to retrieve the operand or not
     */
     bool m_use_accumulator{};
@@ -345,7 +367,7 @@ private:
     
     std::array<opcode_info_t, 0xc0> const m_cpu_isa {{
         {&cpu::cpu_brk, &cpu::mem_impl, 7, 0, 1}, {&cpu::cpu_ora, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
-        {&cpu::cpu_ora, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zp,   5, 0, 2}, {},
+        {&cpu::cpu_ora, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zpx,  5, 0, 2}, {},
         {&cpu::cpu_php, &cpu::mem_impl, 3, 0, 1}, {&cpu::cpu_ora, &cpu::mem_imm,  2, 0, 2},
         {&cpu::cpu_asl, &cpu::mem_a,    2, 0, 1}, {}, {},
         {&cpu::cpu_ora, &cpu::mem_abs,  4, 0, 3}, {&cpu::cpu_asl, &cpu::mem_abs,  6, 0, 3}, {},
@@ -362,17 +384,17 @@ private:
         {&cpu::cpu_rol, &cpu::mem_abs,  6, 0, 3}, {},
         {&cpu::cpu_bmi, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_and, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
         {&cpu::cpu_and, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_rol, &cpu::mem_zpx,  6, 0, 2}, {},
-        {&cpu::cpu_sec, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_and, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
+        {&cpu::cpu_sec, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_and, &cpu::mem_absy, 5, 1, 2}, {}, {}, {},
         {&cpu::cpu_and, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_rol, &cpu::mem_absx, 7, 0, 3}, {},
         {&cpu::cpu_rti, &cpu::mem_impl, 6, 0, 1}, {&cpu::cpu_eor, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
         {&cpu::cpu_eor, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_lsr, &cpu::mem_zp,   5, 0, 2}, {},
         {&cpu::cpu_pha, &cpu::mem_impl, 3, 0, 1}, {&cpu::cpu_eor, &cpu::mem_imm,  2, 0, 2},
         {&cpu::cpu_lsr, &cpu::mem_a,    2, 0, 1}, {},
         {&cpu::cpu_jmp, &cpu::mem_abs,  3, 0, 3}, {&cpu::cpu_eor, &cpu::mem_abs,  4, 0, 3}, 
-        {&cpu::cpu_lsr, &cpu::mem_abs,  6, 0, 3}, {&cpu::cpu_bvc, &cpu::mem_rel,  2, 1, 2},
-        {&cpu::cpu_eor, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
+        {&cpu::cpu_lsr, &cpu::mem_abs,  6, 0, 3}, {},
+        {&cpu::cpu_bvc, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_eor, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
         {&cpu::cpu_eor, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_lsr, &cpu::mem_zpx,  6, 0, 2}, {},
-        {&cpu::cpu_cli, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_eor, &cpu::mem_absy, 4, 1, 3}, {},     {}, {},
+        {&cpu::cpu_cli, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_eor, &cpu::mem_absy, 4, 1, 3}, {}, {}, {},
         {&cpu::cpu_eor, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_lsr, &cpu::mem_absx, 7, 0, 3}, {},
         {&cpu::cpu_rts, &cpu::mem_impl, 6, 0, 1}, {&cpu::cpu_adc, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
         {&cpu::cpu_adc, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_ror, &cpu::mem_zp,   5, 0, 2}, {},
@@ -380,7 +402,7 @@ private:
         {&cpu::cpu_ror, &cpu::mem_a,    2, 0, 1}, {},
         {&cpu::cpu_jmp, &cpu::mem_ind,  5, 0, 3}, {&cpu::cpu_adc, &cpu::mem_abs,  4, 0, 3},
         {&cpu::cpu_ror, &cpu::mem_abs,  6, 0, 3}, {},
-        {&cpu::cpu_bvs, &cpu::mem_rel,  2, 1, 2}, {}, {}, {},
+        {&cpu::cpu_bvs, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_adc, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
         {&cpu::cpu_adc, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_ror, &cpu::mem_zpx,  6, 0, 2},
         {&cpu::cpu_sei, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_adc, &cpu::mem_absy, 4, 1, 3}, {}, {}, {},
         {&cpu::cpu_adc, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_ror, &cpu::mem_absx, 7, 0, 3}, {}, {},
@@ -402,10 +424,7 @@ private:
         {&cpu::cpu_ldy, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_lda, &cpu::mem_zp,   3, 0, 2},
         {&cpu::cpu_ldx, &cpu::mem_zp,   3, 0, 2}, {},
         {&cpu::cpu_tay, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_lda, &cpu::mem_imm,  2, 0, 2},
-        {&cpu::cpu_tax, &cpu::mem_impl, 2, 0, 1}, {},
-
-        /* TODO: there's a bug here (2 elements it's outside from this array) */ 
-        
+        {&cpu::cpu_tax, &cpu::mem_impl, 2, 0, 1}, {},       
         {&cpu::cpu_ldy, &cpu::mem_abs,  4, 0, 3}, {&cpu::cpu_lda, &cpu::mem_abs,  4, 0, 3},
         {&cpu::cpu_ldx, &cpu::mem_abs,  4, 0, 3}, {},
         {&cpu::cpu_bcs, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_lda, &cpu::mem_indy, 5, 1, 2}, {}, {},

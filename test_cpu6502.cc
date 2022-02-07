@@ -12,7 +12,7 @@
 #include "cpu6502.hh"
 
 static std::array<uint8_t, MAX_RAM_STORAGE> cpu_ram{};
-static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom {};
+static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom{};
 
 static size_t executed = 0, bytes_used = 0, executed_cycles = 0;
 
@@ -47,6 +47,14 @@ void TEST_cpu_LOAD (std::shared_ptr<cpu6502> cpu)
 
 }
 
+void TEST_cpu_FLAGS (std::shared_ptr<cpu6502> cpu)
+{
+    cpu->reset ();
+    cpu_rom[0] = 0x58;
+    bytes_used = cpu->step (executed_cycles);
+    assert (cpu->getf (CPU_status::IRQ) == false);
+}
+
 int main ()
 {
     size_t executed_cycles = 0;
@@ -57,6 +65,7 @@ int main ()
     cpu_rom[0x7ffd] = 0x80;
 
     TEST_cpu_LOAD (cpu_6502);
+    TEST_cpu_FLAGS (cpu_6502);
 
     fmt::print ("Executed instructions: {}, Bytes read: {}, Cycles used {}\n", executed, bytes_used, executed_cycles);
     return 0;
