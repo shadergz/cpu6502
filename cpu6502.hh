@@ -103,7 +103,7 @@ public:
     void nmi ();
     void irq ();
 
-    /* ABORT is raised when a invalid opcode has detected */
+    /* ABORT is raised when a invalid opcode has been detected */
     void abort ();
 
     /* Execute cycles_count cycles */
