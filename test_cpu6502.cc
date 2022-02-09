@@ -9,12 +9,12 @@
 
 #include <fmt/format.h>
 
+#include <gtest/gtest.h>
+
 #include "cpu6502.hh"
 
 static std::array<uint8_t, MAX_RAM_STORAGE> cpu_ram{};
 static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom{};
-
-static size_t executed = 0, bytes_used = 0, executed_cycles = 0;
 
 /* CPU callback functions definition */
 
@@ -30,43 +30,46 @@ void cpu_6502_write (uint16_t address, uint8_t data)
     cpu_ram[address & MAX_RAM_STORAGE] = data;
 }
 
-/* CPU test functions */
+cpu6502 cpu = cpu6502 (cpu_6502_read, cpu_6502_write);
 
-void TEST_cpu_PUSH (std::shared_ptr<cpu6502> cpu)
+static size_t executed(0), bytes_used(0), executed_cycles(0);
+
+/* CPU special functions test */
+TEST (CPU_TEST, PUSH) 
 {
-
 }
 
-void TEST_cpu_WRITE (std::shared_ptr<cpu6502> cpu)
+TEST (CPU_TEST, WRITE) 
 {
-
 }
 
-void TEST_cpu_LOAD (std::shared_ptr<cpu6502> cpu)
+TEST (CPU_TEST, LOAD) 
 {
-
+    cpu.reset ();
+    cpu_rom[0] = 0xa9;
+    cpu_rom[1] = 0x50;
+    bytes_used += cpu.step (executed_cycles);
+    cpu.printcs ();
+    EXPECT_EQ (cpu.get_register_a (), cpu_rom[1]);
 }
 
-void TEST_cpu_FLAGS (std::shared_ptr<cpu6502> cpu)
+TEST (CPU_TEST, FLAGS) 
 {
-    cpu->reset ();
+    cpu.reset ();
     cpu_rom[0] = 0x58;
-    bytes_used = cpu->step (executed_cycles);
-    assert (cpu->getf (CPU_status::IRQ) == false);
+    bytes_used = cpu.step (executed_cycles);
+
+    EXPECT_EQ (cpu.getf (CPU_status::IRQ), 0);
 }
 
-int main ()
+int main (int argc, char **argv)
 {
-    size_t executed_cycles = 0;
-    auto cpu_6502 = std::make_shared<cpu6502> (cpu_6502_read, cpu_6502_write);
+    testing::InitGoogleTest (&argc, argv);
 
     /* Setting the program start location address (The first byte of the ROM at 0x8000) */
     cpu_rom[0x7ffc] = 0x00;
     cpu_rom[0x7ffd] = 0x80;
 
-    TEST_cpu_LOAD (cpu_6502);
-    TEST_cpu_FLAGS (cpu_6502);
-
-    fmt::print ("Executed instructions: {}, Bytes read: {}, Cycles used {}\n", executed, bytes_used, executed_cycles);
-    return 0;
+    //fmt::print ("Executed instructions: {}, Bytes read: {}, Cycles used {}\n", executed, bytes_used, executed_cycles);
+    return RUN_ALL_TESTS ();
 }

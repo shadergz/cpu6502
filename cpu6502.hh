@@ -50,7 +50,7 @@ constexpr unsigned CPU_6502_INSTRUCTION_COUNT = 151;
 /* The status after the reset signal */
 constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
 
-enum class ivt_index { ABORT = 0, COP, IRQ_BRK, NMI, RESET };
+enum class IVT_index { ABORT = 0, COP, IRQ_BRK, NMI, RESET };
 enum class CPU_status { CARRY = 0, ZERO, IRQ, DECIMAL, BRK, OVERFLOW, NEGATIVE };
 enum class CPU_content { REG_A = 0, REG_X, REG_Y, PC, SP, DATA, ADDRESS };
 
@@ -360,7 +360,7 @@ private:
 
     using cpu = cpu6502;
     
-    std::array<opcode_info_t, 0xc0> const m_cpu_isa {{
+    std::array<opcode_info_t, 0x100> const m_cpu_isa {{
         {&cpu::cpu_brk, &cpu::mem_impl, 7, 0, 1}, {&cpu::cpu_ora, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
         {&cpu::cpu_ora, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zpx,  5, 0, 2}, {},
         {&cpu::cpu_php, &cpu::mem_impl, 3, 0, 1}, {&cpu::cpu_ora, &cpu::mem_imm,  2, 0, 2},
@@ -398,7 +398,7 @@ private:
         {&cpu::cpu_jmp, &cpu::mem_ind,  5, 0, 3}, {&cpu::cpu_adc, &cpu::mem_abs,  4, 0, 3},
         {&cpu::cpu_ror, &cpu::mem_abs,  6, 0, 3}, {},
         {&cpu::cpu_bvs, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_adc, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
-        {&cpu::cpu_adc, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_ror, &cpu::mem_zpx,  6, 0, 2},
+        {&cpu::cpu_adc, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_ror, &cpu::mem_zpx,  6, 0, 2}, {},
         {&cpu::cpu_sei, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_adc, &cpu::mem_absy, 4, 1, 3}, {}, {}, {},
         {&cpu::cpu_adc, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_ror, &cpu::mem_absx, 7, 0, 3}, {}, {},
         {&cpu::cpu_sta, &cpu::mem_indx, 6, 0, 2}, {}, {},
@@ -427,8 +427,30 @@ private:
         {&cpu::cpu_lda, &cpu::mem_zpy,  4, 0, 2}, {},
         {&cpu::cpu_clv, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_lda, &cpu::mem_absy, 4, 1, 3},
         {&cpu::cpu_tsx, &cpu::mem_impl, 2, 0, 1}, {},
-        {&cpu::cpu_ldy, &cpu::mem_absx, 4, 1, 2}, {&cpu::cpu_lda, &cpu::mem_absx, 4, 1, 3},
-        {&cpu::cpu_ldx, &cpu::mem_absy, 4, 1, 3}, {}
+        {&cpu::cpu_ldy, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_lda, &cpu::mem_absx, 4, 1, 3},
+        {&cpu::cpu_ldx, &cpu::mem_absy, 4, 1, 3}, {},
+        {&cpu::cpu_cpy, &cpu::mem_imm,  2, 0, 2}, {&cpu::cpu_cmp, &cpu::mem_indx, 6, 0, 2}, {}, {},
+        {&cpu::cpu_cpy, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_cmp, &cpu::mem_zp,   3, 0, 2},
+        {&cpu::cpu_dec, &cpu::mem_zpx,  6, 0, 2}, {},
+        {&cpu::cpu_iny, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_cmp, &cpu::mem_imm,  2, 0, 2},
+        {&cpu::cpu_dex, &cpu::mem_impl, 2, 0, 1}, {},
+        {&cpu::cpu_cpy, &cpu::mem_abs,  4, 0, 3}, {&cpu::cpu_cmp, &cpu::mem_abs,  4, 0, 3},
+        {&cpu::cpu_dec, &cpu::mem_abs,  6, 0, 3}, {},
+        {&cpu::cpu_bne, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_cmp, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
+        {&cpu::cpu_cmp, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_dec, &cpu::mem_zpx,  6, 0, 2}, {},
+        {&cpu::cpu_cld, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_cmp, &cpu::mem_absy, 4, 1, 3}, {}, {}, {},
+        {&cpu::cpu_cmp, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_dec, &cpu::mem_absx, 7, 0, 3}, {},
+        {&cpu::cpu_cpx, &cpu::mem_imm,  2, 0, 2}, {&cpu::cpu_sbc, &cpu::mem_indx, 6, 0, 2}, {}, {},
+        {&cpu::cpu_cpx, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_sbc, &cpu::mem_zp,   3, 0, 2},
+        {&cpu::cpu_inc, &cpu::mem_zp,   5, 0, 2}, {},
+        {&cpu::cpu_inx, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_sbc, &cpu::mem_imm,  2, 0, 2},
+        {&cpu::cpu_nop, &cpu::mem_impl, 2, 0, 1}, {},
+        {&cpu::cpu_cpx, &cpu::mem_abs,  4, 0, 3}, {&cpu::cpu_sbc, &cpu::mem_abs,  4, 0, 3},
+        {&cpu::cpu_inc, &cpu::mem_abs,  6, 0, 3}, {},
+        {&cpu::cpu_beq, &cpu::mem_rel,  2, 1, 2}, {&cpu::cpu_sbc, &cpu::mem_indy, 5, 1, 2}, {}, {}, {},
+        {&cpu::cpu_sbc, &cpu::mem_zpx,  4, 0, 2}, {&cpu::cpu_inc, &cpu::mem_zpx,  6, 0, 2}, {},
+        {&cpu::cpu_sed, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_sbc, &cpu::mem_absy, 4, 1, 3}, {}, {}, {},
+        {&cpu::cpu_sbc, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_inc, &cpu::mem_absx, 7, 0, 3}, {}
     }};
 #pragma endregion "Opcode table"
 };

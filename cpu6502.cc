@@ -50,7 +50,7 @@ void cpu6502::reset ()
     m_p.status = RESET_STATUS_SIGNAL;
 
     m_s = static_cast<uint8_t> (START_STACK_ADDRESS);
-    m_address = INTERRUPT_VECTOR_TABLE[static_cast<int> (ivt_index::RESET)][0];
+    m_address = INTERRUPT_VECTOR_TABLE[static_cast<int> (IVT_index::RESET)][0];
     read_memory16 ();
     m_pc = m_data;
 }
@@ -65,7 +65,7 @@ void cpu6502::irq ()
         m_data = m_s;
         push8 ();
         setf (CPU_status::IRQ, true);
-        m_address = INTERRUPT_VECTOR_TABLE[static_cast<int> (ivt_index::IRQ_BRK)][0];
+        m_address = INTERRUPT_VECTOR_TABLE[static_cast<int> (IVT_index::IRQ_BRK)][0];
         read_memory16 ();
         m_pc = m_data;
     }
@@ -79,7 +79,7 @@ void cpu6502::nmi ()
     m_data = m_s;
     push8 ();
     setf (CPU_status::IRQ, true);
-    m_data = INTERRUPT_VECTOR_TABLE[static_cast<int> (ivt_index::NMI)][0];
+    m_data = INTERRUPT_VECTOR_TABLE[static_cast<int> (IVT_index::NMI)][0];
     read_memory16 ();
     m_pc = m_data;
 }
@@ -149,11 +149,11 @@ std::pair<size_t, size_t> cpu6502::step_count (size_t execute, size_t &executed_
 /* Display the internal CPU state */
 void cpu6502::printcs ()
 {
-    fmt::print ("6502 microprocessor informations:\nPC = {:#x}, STACK POINTER = {:#x}\n", m_pc, (uint16_t) m_s | 0x100);
+    fmt::print ("6502 microprocessor informations:\nPC = {:#x}, STACK POINTER = {:#x}\n", m_pc, m_s | BASE_STACK_ADDRESS);
     fmt::print ("CPU register:\nA = {:#x}, X = {:#x}, Y = {:#x}\n", m_a, m_x, m_y);
     fmt::print ("CPU status:\nCarry = {}, Zero = {}, IRQ = {}, Decimal = {}, BRK = {}, Overflow = {}, Negative = {}\n", 
         getf (CPU_status::CARRY), getf (CPU_status::ZERO), getf (CPU_status::IRQ), getf (CPU_status::DECIMAL),
-        getf (CPU_status::BRK),   getf (CPU_status::OVERFLOW), getf (CPU_status::NEGATIVE)
+        getf (CPU_status::BRK), getf (CPU_status::OVERFLOW), getf (CPU_status::NEGATIVE)
     );
 }
 
@@ -241,9 +241,16 @@ void cpu6502::setf (CPU_status status, bool state)
     }
 }
 
-constexpr auto GET_MEMORY_LOCATION_STR (uint16_t address)
+constexpr std::string_view GET_MEMORY_LOCATION_STR (uint16_t address)
 {
-    return address <= 0x1ff ? "STACK" : address <= MAX_RAM_STORAGE ? "RAM" : "ROM";
+    if (address < BASE_STACK_ADDRESS)
+        return "Zero Page";
+    if (address <= START_STACK_ADDRESS)
+        return "Stack";
+    if (address <= MAX_RAM_STORAGE)
+        return "Normal RAM";
+    
+    return "ROM";
 }
 
 /* Read memory operations */
@@ -509,7 +516,7 @@ uint8_t cpu6502::cpu_cld ()
 /* Clean the interrupt status */
 uint8_t cpu6502::cpu_cli ()
 {
-    CPU6502_DBG ("{}\n","Cleaning interrupt");
+    CPU6502_DBG ("{}\n", "Setting the IRQ flag to 0");
     setf (CPU_status::IRQ, false);
     return 0;
 }
@@ -517,6 +524,7 @@ uint8_t cpu6502::cpu_cli ()
 /* Clean the overflow status */
 uint8_t cpu6502::cpu_clv ()
 {
+    CPU6502_DBG ("{}\n", "Setting the Overflow flag to 0");
     setf (CPU_status::OVERFLOW, false);
     return 0;
 }
@@ -530,6 +538,7 @@ uint8_t cpu6502::cpu_clv ()
 */
 uint8_t cpu6502::cpu_cmp ()
 {
+    CPU6502_DBG ("{}\n", "Comparing A with memory");
     read_memory8 ();
     /*
         IF VALUE >  0    ->  REG < MEMORY
@@ -547,6 +556,7 @@ uint8_t cpu6502::cpu_cmp ()
 /* Compare a memory value with the X index register */
 uint8_t cpu6502::cpu_cpx ()
 {
+    CPU6502_DBG ("{}\n", "Comparing X with memory");
     read_memory8 ();
     auto value = (uint8_t)(m_data) - m_x;
 
@@ -559,6 +569,7 @@ uint8_t cpu6502::cpu_cpx ()
 /* Compare a memory value with the Y index register */
 uint8_t cpu6502::cpu_cpy ()
 {
+    CPU6502_DBG ("{}\n", "Comparing Y with memory");
     read_memory8 ();
     auto value = (uint8_t)m_data - m_y;
 
@@ -571,6 +582,7 @@ uint8_t cpu6502::cpu_cpy ()
 /* Decrement a memory value */
 uint8_t cpu6502::cpu_dec ()
 {
+    CPU6502_DBG ("{}\n", "Decrementing memory");
     read_memory8 ();
     m_data--;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_data));
@@ -582,6 +594,7 @@ uint8_t cpu6502::cpu_dec ()
 /* Decrement the X index register */
 uint8_t cpu6502::cpu_dex ()
 {
+    CPU6502_DBG ("{}\n", "Decrementing X");
     m_x--;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_x));
     setf (CPU_status::ZERO, CHECK_ZERO (m_x));
@@ -591,6 +604,7 @@ uint8_t cpu6502::cpu_dex ()
 /* Decrement the Y index register */
 uint8_t cpu6502::cpu_dey ()
 {
+    CPU6502_DBG ("{}\n", "Decrementing Y");
     m_y--;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_y));
     setf (CPU_status::ZERO, CHECK_ZERO (m_y));
@@ -602,6 +616,7 @@ uint8_t cpu6502::cpu_dey ()
 */
 uint8_t cpu6502::cpu_eor ()
 {
+    CPU6502_DBG ("{}\n", "Performing a XOR");
     read_memory8 ();
     m_data ^= m_a;
 
@@ -613,6 +628,7 @@ uint8_t cpu6502::cpu_eor ()
 /* Increment a memory value */
 uint8_t cpu6502::cpu_inc ()
 {
+    CPU6502_DBG ("{}\n", "Inclementing memory");
     read_memory8 ();
     m_data++;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_data));
@@ -624,6 +640,7 @@ uint8_t cpu6502::cpu_inc ()
 /* Increment the X index register */
 uint8_t cpu6502::cpu_inx ()
 {
+    CPU6502_DBG ("{}\n", "Inclementing X");
     m_x++;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_x));
     setf (CPU_status::ZERO, CHECK_ZERO (m_x));
@@ -633,6 +650,7 @@ uint8_t cpu6502::cpu_inx ()
 /* Increment the Y index register */
 uint8_t cpu6502::cpu_iny ()
 {
+    CPU6502_DBG ("{}\n", "Inclementing Y");
     m_y++;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_y));
     setf (CPU_status::ZERO, CHECK_ZERO (m_y));
@@ -642,6 +660,7 @@ uint8_t cpu6502::cpu_iny ()
 /* Jump without a condition to a memory value location address */
 uint8_t cpu6502::cpu_jmp ()
 {
+    CPU6502_DBG ("{}\n", "Unconditional jumping to a memory location");
     read_memory16 ();
     m_pc = m_data;
     return 0;
@@ -650,6 +669,7 @@ uint8_t cpu6502::cpu_jmp ()
 /* Push the next instruction to the stack and jump to a memory value location */
 uint8_t cpu6502::cpu_jsr ()
 {
+    CPU6502_DBG ("{}\n", "Pushing the next instruction and jump to a memory location");
     m_data = m_pc;
     push16 ();
     read_memory16 ();
@@ -660,6 +680,7 @@ uint8_t cpu6502::cpu_jsr ()
 /* Load the A register from a memory value */
 uint8_t cpu6502::cpu_lda ()
 {
+    CPU6502_DBG ("{}\n", "Loading A");
     read_memory8 ();
     m_a = static_cast<uint8_t> (m_data);
 
@@ -672,6 +693,7 @@ uint8_t cpu6502::cpu_lda ()
 /* Load the X register from a memory value */
 uint8_t cpu6502::cpu_ldx ()
 {
+    CPU6502_DBG ("{}\n", "Loading X");
     read_memory8 ();
     m_x = static_cast<uint8_t> (m_data);
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_x));
@@ -682,6 +704,7 @@ uint8_t cpu6502::cpu_ldx ()
 /* Load the Y register from a memory value */
 uint8_t cpu6502::cpu_ldy ()
 {
+    CPU6502_DBG ("{}\n", "Loading Y");
     read_memory8 ();
     m_y = static_cast<uint8_t> (m_data);
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_y));
@@ -692,6 +715,7 @@ uint8_t cpu6502::cpu_ldy ()
 /* Perform a shift right bitwise operation with a memory value or A register */
 uint8_t cpu6502::cpu_lsr ()
 {
+    CPU6502_DBG ("{}\n", "Performing a shift right");
     uint16_t old_value;
 
     if (m_use_accumulator)
@@ -714,15 +738,17 @@ uint8_t cpu6502::cpu_lsr ()
     return 0;
 }
 
-/* Nop operation, does exactly nothing, just waste cycles count */
+/* No operation, does exactly nothing just waste machine cycles */
 uint8_t cpu6502::cpu_nop ()
 {
+    CPU6502_DBG ("{}\n", "Doing exactly nothing");
     return 0;
 }
 
 /* Perform a bitwise OR operation with a memory value */
 uint8_t cpu6502::cpu_ora ()
 {
+    CPU6502_DBG ("{}\n", "Performing OR with memory");
     read_memory8 ();
     
     m_data |= m_a;
@@ -737,6 +763,7 @@ uint8_t cpu6502::cpu_ora ()
 /* Push the accumulator to the stack */
 uint8_t cpu6502::cpu_pha ()
 {
+    CPU6502_DBG ("{}\n", "Pushing A");
     m_data = m_a;
     push8 ();
     return 0;
@@ -745,6 +772,7 @@ uint8_t cpu6502::cpu_pha ()
 /* Push the status register to the stack */
 uint8_t cpu6502::cpu_php ()
 {
+    CPU6502_DBG ("{}\n", "Pushing S");
     /* Setting the reserved bit from any know reason (just docs) */
     m_p.reserved = true;
     m_data = m_p.status;
@@ -755,6 +783,7 @@ uint8_t cpu6502::cpu_php ()
 /* Put the top level stack value into the A register */
 uint8_t cpu6502::cpu_pla ()
 {
+    CPU6502_DBG ("{}\n", "Putting the top stack value into A");
     pop8 ();
     m_a = static_cast<uint8_t> (m_data);
     
@@ -767,6 +796,7 @@ uint8_t cpu6502::cpu_pla ()
 /* Put the top level stack value into the status register */
 uint8_t cpu6502::cpu_plp ()
 {
+    CPU6502_DBG ("{}\n", "Putting the top stack value into S");
     pop8 ();
     m_p.status = static_cast<uint8_t> (m_data);
     return 0;
@@ -776,11 +806,12 @@ uint8_t cpu6502::cpu_plp ()
 /* Perform a one bit rotation to left */
 uint8_t cpu6502::cpu_rol ()
 {
+    CPU6502_DBG ("{}\n", "Rotating one bit to left");
     if (m_use_accumulator)
         m_data = m_a;
     else
         read_memory8 ();
-    uint16_t value = ((uint8_t)m_data) << 1;
+    uint16_t value = static_cast<uint8_t> (m_data) << 1;
     /* 1001010 << 1 == 10010100 */
     value |= (value >> 8) & 1;
     /* 1001010 
@@ -801,11 +832,12 @@ uint8_t cpu6502::cpu_rol ()
 /* Perform a one bit rotation to right */
 uint8_t cpu6502::cpu_ror ()
 {
+    CPU6502_DBG ("{}\n", "Rotating one bit to right");
     if (m_use_accumulator)
         m_data = m_a;
     else
         read_memory8 ();
-    auto carry_bit = m_data & 1;
+    bool carry_bit = m_data & 1;
     m_data |= carry_bit << 7;
     if (m_use_accumulator)
         m_a = static_cast<uint8_t> (m_data);
@@ -818,6 +850,8 @@ uint8_t cpu6502::cpu_ror ()
 /* Pop the status and the program counter from the stack */
 uint8_t cpu6502::cpu_rti ()
 {
+    CPU6502_DBG ("{}\n", "Popping the S and PC (Returning from IRQ)");
+
     pop8 ();
     m_p.status = static_cast<uint8_t> (m_data);
     pop16 ();
@@ -829,6 +863,7 @@ uint8_t cpu6502::cpu_rti ()
 /* Pop the program counter from the stack, inclement him and store into the PC register */
 uint8_t cpu6502::cpu_rts ()
 {
+    CPU6502_DBG ("{}\n", "Popping the PC, inclementing and using");
     pop16 ();
     m_data++;
     m_pc = m_data;
@@ -839,6 +874,7 @@ uint8_t cpu6502::cpu_rts ()
 /* The decimal mode has been implemented */
 uint8_t cpu6502::cpu_sbc ()
 {
+    CPU6502_DBG ("{}\n", "Subtract A with memory and carry values");
     read_memory8 ();
     uint16_t value = m_a - m_data - getf (CPU_status::CARRY);
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (value));
@@ -858,6 +894,7 @@ uint8_t cpu6502::cpu_sbc ()
 /* Set the carry status to 1 */
 uint8_t cpu6502::cpu_sec ()
 {
+    CPU6502_DBG ("{}\n", "Setting Carry flag to 1");
     setf (CPU_status::CARRY, true);
     return 0;
 }
@@ -865,6 +902,7 @@ uint8_t cpu6502::cpu_sec ()
 /* Set the decimal status to 1 */
 uint8_t cpu6502::cpu_sed ()
 {
+    CPU6502_DBG ("{}\n", "Setting Decimal flag to 1");
     setf (CPU_status::DECIMAL, true);
     return 0;
 }
@@ -872,6 +910,7 @@ uint8_t cpu6502::cpu_sed ()
 /* Set the interrupt status to 1 */
 uint8_t cpu6502::cpu_sei ()
 {
+    CPU6502_DBG ("{}\n", "Setting IRQ flag to 1");
     setf (CPU_status::IRQ, true);
     return 0;
 }
@@ -879,6 +918,7 @@ uint8_t cpu6502::cpu_sei ()
 /* Store the A register into the memory */
 uint8_t cpu6502::cpu_sta ()
 {
+    CPU6502_DBG ("{}\n", "Storing A");
     m_data = m_a;
     write_memory8 ();
     return 0;
@@ -887,6 +927,7 @@ uint8_t cpu6502::cpu_sta ()
 /* Store the X register into the memory */
 uint8_t cpu6502::cpu_stx ()
 {
+    CPU6502_DBG ("{}\n", "Storing X");
     m_data = m_x;
     write_memory8 ();
     return 0;
@@ -895,6 +936,7 @@ uint8_t cpu6502::cpu_stx ()
 /* Store the Y register into the memory */
 uint8_t cpu6502::cpu_sty ()
 {
+    CPU6502_DBG ("{}\n", "Storing Y");
     m_data = m_y;
     write_memory8 ();
     return 0;
@@ -903,6 +945,7 @@ uint8_t cpu6502::cpu_sty ()
 /* Move the A register value to X index register */
 uint8_t cpu6502::cpu_tax ()
 {
+    CPU6502_DBG ("{}\n", "Moving A to X");
     m_x = m_a;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_x));
     setf (CPU_status::ZERO, CHECK_ZERO (m_x));
@@ -912,6 +955,7 @@ uint8_t cpu6502::cpu_tax ()
 /* Move the A register value to Y index register */
 uint8_t cpu6502::cpu_tay ()
 {
+    CPU6502_DBG ("{}\n", "Moving A to Y");
     m_y = m_a;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_y));
     setf (CPU_status::ZERO, CHECK_ZERO (m_y));
@@ -921,6 +965,7 @@ uint8_t cpu6502::cpu_tay ()
 /* Move the status register to the X register */
 uint8_t cpu6502::cpu_tsx ()
 {
+    CPU6502_DBG ("{}\n", "Moving S to X");
     m_x = m_s;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_x));
     setf (CPU_status::ZERO, CHECK_ZERO (m_x));
@@ -930,6 +975,7 @@ uint8_t cpu6502::cpu_tsx ()
 /* Move the X register value to the A register */
 uint8_t cpu6502::cpu_txa ()
 {
+    CPU6502_DBG ("{}\n", "Moving X to A");
     m_a = m_x;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE(m_x));
     setf (CPU_status::ZERO, CHECK_ZERO(m_x));
@@ -939,6 +985,7 @@ uint8_t cpu6502::cpu_txa ()
 /* Move the X index register to the status register */
 uint8_t cpu6502::cpu_txs ()
 {
+    CPU6502_DBG ("{}\n", "Moving X to S");
     m_s = m_x;
     return 0;
 }
@@ -946,6 +993,7 @@ uint8_t cpu6502::cpu_txs ()
 /* Move the Y register value to A */
 uint8_t cpu6502::cpu_tya ()
 {
+    CPU6502_DBG ("{}\n", "Moving Y to A");
     m_a = m_y;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_x));
     setf (CPU_status::ZERO, CHECK_ZERO (m_x));
