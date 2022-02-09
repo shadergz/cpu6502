@@ -180,7 +180,7 @@ private:
     cpu_write m_cpu_write_function{};
 #endif
 
-    bool page_crossed (uint16_t first, uint16_t second)
+    bool check_pages (uint16_t first, uint16_t second)
     {
         /* 0x`00´ff ONE PAGE */ 
         /* 0x`01´00 ANOTHER PAGE */

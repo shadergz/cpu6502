@@ -306,7 +306,8 @@ void cpu6502::write_memory16 ()
 uint8_t cpu6502::cpu_adc ()
 {
     uint16_t value;
-    /* REDO: DECIMAL MODE NOT IMPLEMENTED */
+    CPU6502_DBG ("{}\n", "Adding the memory value and carry to accumulator");
+
     read_memory8 ();
     value = m_a + m_data + getf (CPU_status::CARRY);
     setf (CPU_status::ZERO, CHECK_ZERO (m_a));
@@ -325,7 +326,7 @@ uint8_t cpu6502::cpu_adc ()
     setf (CPU_status::OVERFLOW, CHECK_OVERFLOW (m_a, m_data, value));
     
     m_a = value & 0xff;
-    return page_crossed (m_address, m_pc);
+    return check_pages (m_address, m_pc);
 }
 
 /*  Perform a bitwise AND operation with a memory value and the register
@@ -333,19 +334,24 @@ uint8_t cpu6502::cpu_adc ()
 */
 uint8_t cpu6502::cpu_and ()
 {
+    CPU6502_DBG ("{}\n", "Performig a AND with memory and accumulator");
+
     read_memory8 ();
     m_a &= static_cast<uint8_t> (m_data);
     setf (CPU_status::ZERO, CHECK_ZERO (m_a));
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_a));
 
-    return  page_crossed (m_address, m_pc);
+    return  check_pages (m_address, m_pc);
 }
 
 /* Perform a shift left operation */
 uint8_t cpu6502::cpu_asl ()
 {
+    uint16_t old_value;
+    CPU6502_DBG ("{}\n", "Performig a SHL");
+
     read_memory8 ();
-    uint16_t old_value = m_data;
+    old_value = m_data;
 
     m_data <<= 1;
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_data));
@@ -360,39 +366,42 @@ uint8_t cpu6502::cpu_asl ()
 uint8_t cpu6502::cpu_bcc ()
 {
     uint16_t branch_address;
+    CPU6502_DBG ("{}\n", "Taking the branch if Carry = 0");
 
     read_memory8 ();
     if (!getf (CPU_status::CARRY)) {
         branch_address = m_pc + m_data;
         m_pc = branch_address;
     }
-    return page_crossed (branch_address, m_pc) + 1;
+    return check_pages (branch_address, m_pc) + 1;
 }
 
 /* Take the branch if the carry status is setted to 1 */
 uint8_t cpu6502::cpu_bcs ()
 {
     uint16_t branch_address;
+    CPU6502_DBG ("{}\n", "Taking the branch if Carry = 1");
 
     read_memory8 ();
     if (getf (CPU_status::CARRY)) {
         branch_address = m_pc + m_data;
         m_pc = branch_address;
     }
-    return page_crossed (branch_address, m_pc) + 1;;
+    return check_pages (branch_address, m_pc) + 1;;
 }
 
 /* Take the branch if the zero status is setted to 1 */
 uint8_t cpu6502::cpu_beq ()
 {
     uint16_t branch_address;
+    CPU6502_DBG ("{}\n", "Taking the branch if Zero = 1");
 
     read_memory8 ();
     if (getf (CPU_status::ZERO)) {
         branch_address = m_pc + m_data;  
         m_pc = branch_address;
     }
-    return page_crossed (branch_address, m_pc) + 1;;
+    return check_pages (branch_address, m_pc) + 1;;
 }
 
 /*  Perform a bit check, the msb (7th bit) is deslocated to the negative status, and the 
@@ -405,6 +414,7 @@ constexpr bool CPU_BIT_OVER (uint16_t x)
 
 uint8_t cpu6502::cpu_bit ()
 {
+    CPU6502_DBG ("{}\n", "Performing a BIT operation");
     read_memory8 ();
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_data));
     /* Trying to set the overflow status with the 6th bit from the fetched data */
@@ -418,39 +428,44 @@ uint8_t cpu6502::cpu_bit ()
 uint8_t cpu6502::cpu_bmi ()
 {
     uint16_t branch_address;
+
+    CPU6502_DBG ("{}\n", "Taking the branch if Negative = 1");
     read_memory8 ();
 
     if (getf (CPU_status::NEGATIVE)) {
         branch_address = m_pc + m_data;
         m_pc = branch_address;
     }
-    return  page_crossed (branch_address, m_pc) + 1;;
+    return check_pages (branch_address, m_pc) + 1;;
 }
 
 /* Take the branch if the zero status is setted to 0 */
 uint8_t cpu6502::cpu_bne ()
 {
     uint16_t branch_address;
+    CPU6502_DBG ("{}\n", "Taking the branch if Zero = 0");
+
     read_memory8 ();
 
     if (!getf (CPU_status::ZERO)) {
         branch_address = m_pc + m_data;    
         m_pc = branch_address;
     }
-    return page_crossed (branch_address, m_pc) + 1;
+    return check_pages (branch_address, m_pc) + 1;
 }
 
 /* Take the branch if the negative status is setted to 0 */
 uint8_t cpu6502::cpu_bpl ()
 {
     uint16_t branch_address;
+    CPU6502_DBG ("{}\n", "Taking the branch if Negative = 0");
 
     read_memory8 ();
     if (!getf (CPU_status::NEGATIVE)) {
         branch_address = m_pc + m_data;
         m_pc = branch_address;
     }
-    return page_crossed (branch_address, m_pc) + 1;
+    return check_pages (branch_address, m_pc) + 1;
 }
 
 /*  Generate a interrupt just like the hardware IRQ, the actual status and the program counter is pushed 
@@ -458,6 +473,7 @@ uint8_t cpu6502::cpu_bpl ()
 */
 uint8_t cpu6502::cpu_brk ()
 {
+    CPU6502_DBG ("{}\n", "Performing a BRK instruction");
     /* A extra byte is added to provide a reason for the break */
     m_data = m_pc + 1;
     push16 ();
@@ -473,35 +489,38 @@ uint8_t cpu6502::cpu_brk ()
     return 0;
 }
 
-/* Take the branch if the overflow status is setted to 1 */
+/* Take the branch if the overflow status is setted to 0 */
 uint8_t cpu6502::cpu_bvc ()
 {
     uint16_t branch_address;
+    CPU6502_DBG ("{}\n", "Taking the branch if Overflow = 0");
 
     read_memory8 ();
     if (!getf (CPU_status::OVERFLOW)) {
         branch_address = m_pc + m_data; 
         m_pc = branch_address;
     }
-    return page_crossed (branch_address, m_pc) + 1;
+    return check_pages (branch_address, m_pc) + 1;
 }
 
 /* Take the branch if the overflow status is setted to 1 */
 uint8_t cpu6502::cpu_bvs ()
 {
     uint16_t branch_address;
+    CPU6502_DBG ("{}\n", "Taking the branch if Overflow = 1");
     read_memory8 ();
 
     if (getf (CPU_status::OVERFLOW)) {
         branch_address = m_pc + m_data;
         m_pc = branch_address;
     }
-    return page_crossed (branch_address, m_pc) + 1;
+    return check_pages (branch_address, m_pc) + 1;
 }
 
 /* Clean the carry status */
 uint8_t cpu6502::cpu_clc ()
 {
+    CPU6502_DBG ("{}\n", "Setting the Carry to 0 ");
     setf (CPU_status::CARRY, false);
     return 0;
 }
@@ -509,6 +528,7 @@ uint8_t cpu6502::cpu_clc ()
 /* Clean the decimal status */
 uint8_t cpu6502::cpu_cld ()
 {
+    CPU6502_DBG ("{}\n", "Setting the Decimal to 0");
     setf (CPU_status::DECIMAL, false);
     return 0;
 }
@@ -516,7 +536,7 @@ uint8_t cpu6502::cpu_cld ()
 /* Clean the interrupt status */
 uint8_t cpu6502::cpu_cli ()
 {
-    CPU6502_DBG ("{}\n", "Setting the IRQ flag to 0");
+    CPU6502_DBG ("{}\n", "Setting the IRQ to 0");
     setf (CPU_status::IRQ, false);
     return 0;
 }
@@ -524,7 +544,7 @@ uint8_t cpu6502::cpu_cli ()
 /* Clean the overflow status */
 uint8_t cpu6502::cpu_clv ()
 {
-    CPU6502_DBG ("{}\n", "Setting the Overflow flag to 0");
+    CPU6502_DBG ("{}\n", "Setting the Overflow to 0");
     setf (CPU_status::OVERFLOW, false);
     return 0;
 }
@@ -538,6 +558,7 @@ uint8_t cpu6502::cpu_clv ()
 */
 uint8_t cpu6502::cpu_cmp ()
 {
+    uint16_t value;
     CPU6502_DBG ("{}\n", "Comparing A with memory");
     read_memory8 ();
     /*
@@ -545,20 +566,21 @@ uint8_t cpu6502::cpu_cmp ()
         IF VALUE == 0    ->  REG == MEMORY
         IF VALUE <  0    ->  REG > MEMORY
     */
-    uint16_t value = ((uint8_t)m_data) - m_a;
+    value = static_cast<uint8_t> (m_data) - m_a;
 
     setf (CPU_status::ZERO, CHECK_ZERO (value));
     setf (CPU_status::CARRY, CHECK_ZERO (value));
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (value));
-    return page_crossed (m_address, m_pc);
+    return check_pages (m_address, m_pc);
 }
 
 /* Compare a memory value with the X index register */
 uint8_t cpu6502::cpu_cpx ()
 {
+    uint16_t value;
     CPU6502_DBG ("{}\n", "Comparing X with memory");
     read_memory8 ();
-    auto value = (uint8_t)(m_data) - m_x;
+    value = static_cast<uint8_t> (m_data) - m_x;
 
     setf (CPU_status::ZERO, CHECK_ZERO (value));
     setf (CPU_status::CARRY, CHECK_ZERO (value));
@@ -569,9 +591,10 @@ uint8_t cpu6502::cpu_cpx ()
 /* Compare a memory value with the Y index register */
 uint8_t cpu6502::cpu_cpy ()
 {
+    uint16_t value;
     CPU6502_DBG ("{}\n", "Comparing Y with memory");
     read_memory8 ();
-    auto value = (uint8_t)m_data - m_y;
+    value = static_cast<uint8_t> (m_data) - m_y;
 
     setf (CPU_status::ZERO, CHECK_ZERO (value));
     setf (CPU_status::CARRY, CHECK_ZERO (value));
@@ -622,7 +645,7 @@ uint8_t cpu6502::cpu_eor ()
 
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_data));
     setf (CPU_status::ZERO, CHECK_ZERO (m_data));
-    return page_crossed (m_address, m_pc);
+    return check_pages (m_address, m_pc);
 }
 
 /* Increment a memory value */
@@ -686,7 +709,7 @@ uint8_t cpu6502::cpu_lda ()
 
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_a));
     setf (CPU_status::ZERO, CHECK_ZERO (m_a));
-    return page_crossed (m_address, m_pc);
+    return check_pages (m_address, m_pc);
 
 }
 
@@ -698,7 +721,7 @@ uint8_t cpu6502::cpu_ldx ()
     m_x = static_cast<uint8_t> (m_data);
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_x));
     setf (CPU_status::ZERO, CHECK_ZERO (m_x));
-    return page_crossed (m_address, m_pc);
+    return check_pages (m_address, m_pc);
 }
 
 /* Load the Y register from a memory value */
@@ -709,14 +732,14 @@ uint8_t cpu6502::cpu_ldy ()
     m_y = static_cast<uint8_t> (m_data);
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_y));
     setf (CPU_status::ZERO, CHECK_ZERO (m_y));
-    return page_crossed (m_address, m_pc);
+    return check_pages (m_address, m_pc);
 }
 
 /* Perform a shift right bitwise operation with a memory value or A register */
 uint8_t cpu6502::cpu_lsr ()
 {
-    CPU6502_DBG ("{}\n", "Performing a shift right");
     uint16_t old_value;
+    CPU6502_DBG ("{}\n", "Performing a shift right");
 
     if (m_use_accumulator)
         m_data = m_a;
@@ -757,7 +780,7 @@ uint8_t cpu6502::cpu_ora ()
 
     write_memory8 ();
 
-    return page_crossed (m_address, m_pc);
+    return check_pages (m_address, m_pc);
 }
 
 /* Push the accumulator to the stack */
@@ -806,12 +829,13 @@ uint8_t cpu6502::cpu_plp ()
 /* Perform a one bit rotation to left */
 uint8_t cpu6502::cpu_rol ()
 {
+    uint16_t value;
     CPU6502_DBG ("{}\n", "Rotating one bit to left");
     if (m_use_accumulator)
         m_data = m_a;
     else
         read_memory8 ();
-    uint16_t value = static_cast<uint8_t> (m_data) << 1;
+    value = static_cast<uint8_t> (m_data) << 1;
     /* 1001010 << 1 == 10010100 */
     value |= (value >> 8) & 1;
     /* 1001010 
@@ -832,12 +856,13 @@ uint8_t cpu6502::cpu_rol ()
 /* Perform a one bit rotation to right */
 uint8_t cpu6502::cpu_ror ()
 {
+    bool carry_bit;
     CPU6502_DBG ("{}\n", "Rotating one bit to right");
     if (m_use_accumulator)
         m_data = m_a;
     else
         read_memory8 ();
-    bool carry_bit = m_data & 1;
+    carry_bit = m_data & 1;
     m_data |= carry_bit << 7;
     if (m_use_accumulator)
         m_a = static_cast<uint8_t> (m_data);
@@ -874,9 +899,10 @@ uint8_t cpu6502::cpu_rts ()
 /* The decimal mode has been implemented */
 uint8_t cpu6502::cpu_sbc ()
 {
+    uint16_t value;
     CPU6502_DBG ("{}\n", "Subtract A with memory and carry values");
     read_memory8 ();
-    uint16_t value = m_a - m_data - getf (CPU_status::CARRY);
+    value = m_a - m_data - getf (CPU_status::CARRY);
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (value));
     setf (CPU_status::ZERO, CHECK_ZERO (value));
     setf (CPU_status::OVERFLOW, CHECK_OVERFLOW (m_a, value, m_data));
@@ -888,7 +914,7 @@ uint8_t cpu6502::cpu_sbc ()
     }
     setf (CPU_status::CARRY, value < 0x100);
     m_a = value & 0xff;
-    return page_crossed (m_address, m_pc);
+    return check_pages (m_address, m_pc);
 }
 
 /* Set the carry status to 1 */
