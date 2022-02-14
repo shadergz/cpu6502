@@ -281,6 +281,8 @@ void cpu6502::read_memory16 ()
 void cpu6502::write_memory8 ()
 {
     uint8_t *memory;
+
+    CPU6502_DBG ("Writing {:#x} into {:#x}\n", m_data, m_address);
     m_data &= 0x00ff;
     /* You can't write inside a read only memory */
     assert (m_address <= MAX_RAM_STORAGE);
@@ -342,7 +344,7 @@ uint8_t cpu6502::cpu_and ()
     setf (CPU_status::ZERO, CHECK_ZERO (m_a));
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_a));
 
-    return  check_pages (m_address, m_pc);
+    return check_pages (m_address, m_pc);
 }
 
 /* Perform a shift left operation */
@@ -1046,6 +1048,8 @@ void cpu6502::mem_a ()
 void cpu6502::mem_abs ()
 {
     m_address = ++m_pc;
+    read_memory16 ();
+    m_address = m_data;
     m_pc += 2;
 }
 
