@@ -65,31 +65,44 @@ TEST (CPU_TEST, FLAGS)
 
 TEST (CPU_TEST, PROGRAM)
 {
+#define TEST_CYCLES_ACCURATE 1
     cpu.reset ();
 
-    /* LDA #$0x50 */
+    /* LDA #$0x50 ; 2 C */
     cpu_rom[0] = 0xa9;
     cpu_rom[1] = 0x50;
     
-    /* STA $1000 */
+    /* STA $1000 ; 4 C */
     cpu_rom[2] = 0x8d;
     cpu_rom[3] = 0x00;
     cpu_rom[4] = 0x10;
 
-    /* LDX $1000 */
+    /* LDX $1000 ; 4 C */
     cpu_rom[5] = 0xae;
     cpu_rom[6] = 0x00;
     cpu_rom[7] = 0x10;
 
     cpu.step_count (3, executed_cycles);
-
-    /* ORA $#10 */
+    EXPECT_EQ (cpu.get_register_x (), 0x50);
+#if TEST_CYCLES_ACCURATE
+    EXPECT_EQ (executed_cycles, 10);
+#endif
+    /* ORA $#10 ; 2 C*/
     cpu_rom[8] = 0x09;
     cpu_rom[9] = 0x10;
+    /* PHA ; 3 C */
+    cpu_rom[10] = 0x48;
+    /* PLA ; 4 C */
+    cpu_rom[11] = 0x68;
 
-    cpu.step_count (1, executed_cycles);
+    cpu.step_count (3, executed_cycles);
+    EXPECT_EQ (cpu.get_register_a (), 0x50 | 0x10);
+#if TEST_CYCLES_ACCURATE
 
-    EXPECT_EQ (cpu.get_register_x (), 0x50 | 0x10);
+    EXPECT_EQ (executed_cycles, 9);
+#endif
+
+#undef TEST_CYCLES_ACCURATE
 }
 
 int main (int argc, char **argv)

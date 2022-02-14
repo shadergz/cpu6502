@@ -207,7 +207,7 @@ private:
     void pop8 ()
     {
         /* Pop a 8 bit value from the stack */
-        m_address = m_s++;
+        m_address = m_s++ | BASE_STACK_ADDRESS;
         read_memory8 ();
     }
 
