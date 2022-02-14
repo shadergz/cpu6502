@@ -781,8 +781,6 @@ uint8_t cpu6502::cpu_ora ()
     setf (CPU_status::NEGATIVE, CHECK_NEGATIVE (m_data));
     setf (CPU_status::ZERO, CHECK_ZERO (m_data));
 
-    write_memory8 ();
-
     return check_pages (m_address, m_pc);
 }
 

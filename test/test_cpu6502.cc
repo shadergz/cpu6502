@@ -63,7 +63,7 @@ TEST (CPU_TEST, FLAGS)
 }
 
 
-TEST (CPU_TEST, FIFTY_CYCLES)
+TEST (CPU_TEST, PROGRAM)
 {
     cpu.reset ();
 
@@ -83,7 +83,13 @@ TEST (CPU_TEST, FIFTY_CYCLES)
 
     cpu.step_count (3, executed_cycles);
 
-    EXPECT_EQ (cpu.get_register_x (), 0x50);
+    /* ORA $#10 */
+    cpu_rom[8] = 0x09;
+    cpu_rom[9] = 0x10;
+
+    cpu.step_count (1, executed_cycles);
+
+    EXPECT_EQ (cpu.get_register_x (), 0x50 | 0x10);
 }
 
 int main (int argc, char **argv)
