@@ -237,7 +237,7 @@ void cpu6502::setf (CPU_status status, bool state)
         m_p.negative = state;
         return;
     default:
-        std::terminate();
+        std::terminate ();
     }
 }
 
@@ -280,16 +280,17 @@ void cpu6502::read_memory16 ()
 /* Write memory operations */
 void cpu6502::write_memory8 ()
 {
+    uint8_t *memory;
     m_data &= 0x00ff;
-    /* You can't write t the read only memory */
+    /* You can't write inside a read only memory */
     assert (m_address <= MAX_RAM_STORAGE);
 #if USE_6502_CALLBACKS
     m_cpu_write_function (m_address, m_data);
 #else
-    uint8_t *memory = select_memory (m_address);
+    memory = select_memory (m_address);
     memory[m_address & MAX_RAM_STORAGE] = static_cast<uint8_t> (m_data);
 #endif
-    CPU6502_DBG ("{:#02x} writted into {:#04x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
+    CPU6502_DBG ("{:#x} writted into {:#x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::write_memory16 ()
@@ -520,7 +521,7 @@ uint8_t cpu6502::cpu_bvs ()
 /* Clean the carry status */
 uint8_t cpu6502::cpu_clc ()
 {
-    CPU6502_DBG ("{}\n", "Setting the Carry to 0 ");
+    CPU6502_DBG ("{}\n", "Setting the Carry to 0");
     setf (CPU_status::CARRY, false);
     return 0;
 }

@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-#include "cpu6502.hh"
+#include <cpu6502.hh>
 
 static std::array<uint8_t, MAX_RAM_STORAGE> cpu_ram{};
 static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom{};
@@ -30,7 +30,7 @@ void cpu_6502_write (uint16_t address, uint8_t data)
     cpu_ram[address & MAX_RAM_STORAGE] = data;
 }
 
-cpu6502 cpu = cpu6502 (cpu_6502_read, cpu_6502_write);
+auto cpu = cpu6502 (cpu_6502_read, cpu_6502_write);
 
 static size_t executed(0), bytes_used(0), executed_cycles(0);
 

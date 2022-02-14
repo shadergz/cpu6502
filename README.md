@@ -83,6 +83,8 @@ void cpu_6502_write (uint16_t address, uint8_t data)
 {
     cpu_ram[address & MAX_RAM_STORAGE] = data;
 }
+
+cpu6502 cpu = cpu6502 (cpu_6502_read, cpu_6502_write);
 ```
 
 The second needed a ram and rom uint8_t* array pointers
@@ -111,7 +113,7 @@ std::pair<size_t, size_t> step_count (size_t cycles_count, size_t &executed_cycl
 
 Some get functions has been implemented to help into the debug or something else like "stack trace"
 
-```c
+```cc
 auto get_register_a ();
 auto get_register_x ();
 auto get_register_y ();
