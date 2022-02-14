@@ -946,6 +946,7 @@ uint8_t cpu6502::cpu_sei ()
 uint8_t cpu6502::cpu_sta ()
 {
     CPU6502_DBG ("{}\n", "Storing A");
+    m_address = m_data;
     m_data = m_a;
     write_memory8 ();
     return 0;
@@ -1054,14 +1055,18 @@ void cpu6502::mem_abs ()
 /* This addressing mode specify a complete 2 bytes value plus the X index register */
 void cpu6502::mem_absx ()
 {
-    m_address = ++m_pc + m_x;
+    m_address = ++m_pc;
+    read_memory16 ();
+    m_address = m_data + m_x;
     m_pc += 2;
 }
 
 /* This addressing mode specify a complete 2 bytes value plus the Y index register */
 void cpu6502::mem_absy ()
 {
-    m_address = ++m_pc + m_y;
+    m_address = ++m_pc;
+    read_memory16 ();
+    m_address = m_data + m_y;
     m_pc += 2;
 }
 
@@ -1092,7 +1097,7 @@ void cpu6502::mem_ind ()
 /* Index a memory location with X register */
 void cpu6502::mem_indx ()
 {
-    m_address = ++m_pc + m_x;
+    m_address = m_a + m_x;
     read_memory16 ();
     m_address = m_data;
     m_pc += 2;
@@ -1117,7 +1122,7 @@ void cpu6502::mem_indy ()
 void cpu6502::mem_rel ()
 {
     m_address = ++m_pc;
-    read_memory16 ();
+    read_memory8 ();
     m_data += m_pc - 1;
     ++m_pc;
 

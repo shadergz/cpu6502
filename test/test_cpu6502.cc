@@ -101,8 +101,59 @@ TEST (CPU_TEST, PROGRAM)
 
     EXPECT_EQ (executed_cycles, 9);
 #endif
+    
+    /* INX ; 2 C */
+    cpu_rom[12] = 0xe8;
+    cpu.step_count (1, executed_cycles);
+    EXPECT_EQ (cpu.get_register_x (), (0x50 | 0x10) + 1);
+    /* TAX ; 2 */
+    cpu_rom[13] = 0xaa;
+    cpu.step_count (1, executed_cycles);
+    EXPECT_EQ (cpu.get_register_a (), cpu.get_register_x ());
 
 #undef TEST_CYCLES_ACCURATE
+}
+
+TEST (CPU_TEST, MEMSET)
+{
+    /* 
+        Fill from the address 0x1000 with 0x0a 0xff bytes
+        Something like this: memset (0x1000, 0xff, 0xa);
+
+        LDA #$0xff
+        LDX #$50
+        LDY #10
+        LOOP_01:
+            STA ($#0, X)
+            DEY
+            BPL LOOP_01
+    */
+
+    cpu.reset ();
+    /* LDA #$0xff */
+    cpu_rom[0] = 0xa9;
+    cpu_rom[1] = 0xff;
+
+    /* LDY #10 */
+    cpu_rom[2] = 0xa0;
+    cpu_rom[3] = 0x0a;
+
+    EXPECT_EQ (cpu.get_register_y (), 0x0a);
+
+    /* Save this address ; m_pc = 0x8000 + 0x04 (LOOP_01) */
+    /* STA ($#0, X) */
+    cpu_rom[4] = 0x99;
+    cpu_rom[5] = 0x00;
+    cpu_rom[6] = 0x10;
+
+    /* DEY */
+    cpu_rom[7] = 0x88;
+
+    /* BPL LOOP_01 */
+    cpu_rom[8] = 0x10;
+    cpu_rom[9] = static_cast<uint8_t> (-4);
+
+    cpu.step_count (5, executed_cycles);
 }
 
 int main (int argc, char **argv)
