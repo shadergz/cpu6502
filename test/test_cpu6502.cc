@@ -117,8 +117,8 @@ TEST (CPU_TEST, PROGRAM)
 TEST (CPU_TEST, MEMSET)
 {
     /* 
-        Fill from the address 0x1000 with 0x0a 0xff bytes
-        Something like this: memset (0x1000, 0xff, 0xa);
+        Fill from the address 0x1000 with 0x09 0xff bytes
+        Something like this: memset (0x1000, 0xff, 0x09);
 
         LDA #$0xff
         LDX #$50
@@ -136,10 +136,7 @@ TEST (CPU_TEST, MEMSET)
 
     /* LDY #10 */
     cpu_rom[2] = 0xa0;
-    cpu_rom[3] = 0x0a;
-
-    /* Something strange is occurring here */
-    //EXPECT_EQ (cpu.get_register_y (), 0x0a);
+    cpu_rom[3] = 0x09;
 
     /* Save this address ; m_pc = 0x8000 + 0x04 (LOOP_01) */
     /* STA ($#0, X) */
@@ -152,9 +149,9 @@ TEST (CPU_TEST, MEMSET)
 
     /* BPL LOOP_01 */
     cpu_rom[8] = 0x10;
-    cpu_rom[9] = static_cast<uint8_t> (-4);
+    cpu_rom[9] = -6;
 
-    cpu.step_count (5, executed_cycles);
+    cpu.step_count (32, executed_cycles);
 }
 
 int main (int argc, char **argv)

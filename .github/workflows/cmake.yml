@@ -20,8 +20,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
-    - name: Install Format Library
-      run: sudo apt-get install -y libfmt-dev
+    - name: Install fmt library
+      run: sudo apt install -y libfmt-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -37,7 +37,5 @@ jobs:
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run:
-        cd test
-        ctest -C ${{env.BUILD_TYPE}}
-        cd ..
-      
+        ctest -C ${{env.BUILD_TYPE}} --test-dir test
+

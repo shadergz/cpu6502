@@ -373,7 +373,7 @@ uint8_t cpu6502::cpu_bcc ()
 
     read_memory8 ();
     if (!getf (CPU_status::CARRY)) {
-        branch_address = m_pc + m_data;
+        branch_address = m_pc + ((int8_t)m_data);
         m_pc = branch_address;
     }
     return check_pages (branch_address, m_pc) + 1;
@@ -387,10 +387,10 @@ uint8_t cpu6502::cpu_bcs ()
 
     read_memory8 ();
     if (getf (CPU_status::CARRY)) {
-        branch_address = m_pc + m_data;
+        branch_address = m_pc + ((int8_t)m_data);
         m_pc = branch_address;
     }
-    return check_pages (branch_address, m_pc) + 1;;
+    return check_pages (branch_address, m_pc) + 1;
 }
 
 /* Take the branch if the zero status is setted to 1 */
@@ -401,7 +401,7 @@ uint8_t cpu6502::cpu_beq ()
 
     read_memory8 ();
     if (getf (CPU_status::ZERO)) {
-        branch_address = m_pc + m_data;  
+        branch_address = m_pc + ((int8_t)m_data);
         m_pc = branch_address;
     }
     return check_pages (branch_address, m_pc) + 1;;
@@ -436,7 +436,7 @@ uint8_t cpu6502::cpu_bmi ()
     read_memory8 ();
 
     if (getf (CPU_status::NEGATIVE)) {
-        branch_address = m_pc + m_data;
+        branch_address = m_pc + ((int8_t)m_data);
         m_pc = branch_address;
     }
     return check_pages (branch_address, m_pc) + 1;;
@@ -451,7 +451,7 @@ uint8_t cpu6502::cpu_bne ()
     read_memory8 ();
 
     if (!getf (CPU_status::ZERO)) {
-        branch_address = m_pc + m_data;    
+        branch_address = m_pc + ((int8_t)m_data);   
         m_pc = branch_address;
     }
     return check_pages (branch_address, m_pc) + 1;
@@ -465,7 +465,7 @@ uint8_t cpu6502::cpu_bpl ()
 
     read_memory8 ();
     if (!getf (CPU_status::NEGATIVE)) {
-        branch_address = m_pc + m_data;
+        branch_address = m_pc + ((int8_t)m_data);
         m_pc = branch_address;
     }
     return check_pages (branch_address, m_pc) + 1;
@@ -500,7 +500,7 @@ uint8_t cpu6502::cpu_bvc ()
 
     read_memory8 ();
     if (!getf (CPU_status::OVERFLOW)) {
-        branch_address = m_pc + m_data; 
+        branch_address = m_pc + ((int8_t)m_data);
         m_pc = branch_address;
     }
     return check_pages (branch_address, m_pc) + 1;
@@ -514,7 +514,7 @@ uint8_t cpu6502::cpu_bvs ()
     read_memory8 ();
 
     if (getf (CPU_status::OVERFLOW)) {
-        branch_address = m_pc + m_data;
+        branch_address = m_pc + ((int8_t)m_data);
         m_pc = branch_address;
     }
     return check_pages (branch_address, m_pc) + 1;
@@ -946,7 +946,6 @@ uint8_t cpu6502::cpu_sei ()
 uint8_t cpu6502::cpu_sta ()
 {
     CPU6502_DBG ("{}\n", "Storing A");
-    m_address = m_data;
     m_data = m_a;
     write_memory8 ();
     return 0;
@@ -1121,11 +1120,9 @@ void cpu6502::mem_indy ()
 */
 void cpu6502::mem_rel ()
 {
+    int8_t offset;
     m_address = ++m_pc;
-    read_memory8 ();
-    m_data += m_pc - 1;
     ++m_pc;
-
 }
 
 /* Zero page indexing */
