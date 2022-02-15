@@ -125,6 +125,7 @@ public:
     auto get_last_fetched_data () const { return m_data; }
     auto get_last_acceded_address () const { return m_address; }
 
+    /*
     const uint16_t operator[] (CPU_content content) const
     {
         switch (content) {
@@ -146,7 +147,8 @@ public:
             return {};
         }
     }
-    
+    */
+
 private:
     /* Functions and variables used in the read/write data operations */
 
@@ -452,6 +454,6 @@ private:
         {&cpu::cpu_sed, &cpu::mem_impl, 2, 0, 1}, {&cpu::cpu_sbc, &cpu::mem_absy, 4, 1, 3}, {}, {}, {},
         {&cpu::cpu_sbc, &cpu::mem_absx, 4, 1, 3}, {&cpu::cpu_inc, &cpu::mem_absx, 7, 0, 3}, {}
     }};
-#pragma endregion "Opcode table"
+#pragma endregion "Opcodes table"
 };
 

@@ -128,7 +128,7 @@ size_t cpu6502::step (size_t &executed_cycles)
         m_cycles_wasted += executed_cycles += cycles_used;
         consumed_bytes = current_instruction->bytes_consumed;            
         } catch (uint8_t invalid_opcode) {
-            fmt::print (stderr, "Stopped by a invalid instruction opcode {:#x} during the decode event\n", invalid_opcode);
+            fmt::print (stderr, "Stopped by a invalid instruction opcode {:#x} during the instruction fetch event\n", invalid_opcode);
             std::terminate ();
         }
 
