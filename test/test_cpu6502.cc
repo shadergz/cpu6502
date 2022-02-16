@@ -20,14 +20,16 @@ static std::array<uint8_t, MAX_ROM_STORAGE> cpu_rom{};
 
 uint8_t cpu_6502_read (uint16_t address)
 {
-    if (address <= MAX_RAM_STORAGE)
+    if (address < MAX_RAM_STORAGE)
         return cpu_ram[address];
-    return cpu_rom[address & MAX_RAM_STORAGE];
+    /* fmt::print ("Rom memory: {:#x}\n", address & MAX_ROM_STORAGE); */
+    return cpu_rom[address & MAX_ROM_STORAGE];
 }
 
 void cpu_6502_write (uint16_t address, uint8_t data)
 {
-    cpu_ram[address & MAX_RAM_STORAGE] = data;
+    //fmt::print ("Real RAM: {:#x}\n", address);
+    cpu_ram[address] = data;
 }
 
 auto cpu = cpu6502 (cpu_6502_read, cpu_6502_write);
@@ -72,15 +74,15 @@ TEST (CPU_TEST, PROGRAM)
     cpu_rom[0] = 0xa9;
     cpu_rom[1] = 0x50;
     
-    /* STA $1000 ; 4 C */
+    /* STA $400 ; 4 C */
     cpu_rom[2] = 0x8d;
     cpu_rom[3] = 0x00;
-    cpu_rom[4] = 0x10;
+    cpu_rom[4] = 0x04;
 
-    /* LDX $1000 ; 4 C */
+    /* LDX $400 ; 4 C */
     cpu_rom[5] = 0xae;
     cpu_rom[6] = 0x00;
-    cpu_rom[7] = 0x10;
+    cpu_rom[7] = 0x04;
 
     cpu.step_count (3, executed_cycles);
     EXPECT_EQ (cpu.get_register_x (), 0x50);
@@ -117,14 +119,13 @@ TEST (CPU_TEST, PROGRAM)
 TEST (CPU_TEST, MEMSET)
 {
     /* 
-        Fill from the address 0x1000 with 0x09 0xff bytes
-        Something like this: memset (0x1000, 0xff, 0x09);
+        Fill from the address 0x400 to 0x409 with 0xff bytes
+        Something like this: memset (0x400, 0xff, 0x09);
 
         LDA #$0xff
-        LDX #$50
         LDY #10
         LOOP_01:
-            STA ($#0, X)
+            STA (#$400, Y)
             DEY
             BPL LOOP_01
     */
@@ -134,7 +135,7 @@ TEST (CPU_TEST, MEMSET)
     cpu_rom[0] = 0xa9;
     cpu_rom[1] = 0xff;
 
-    /* LDY #10 */
+    /* LDY #09 */
     cpu_rom[2] = 0xa0;
     cpu_rom[3] = 0x09;
 
@@ -142,7 +143,7 @@ TEST (CPU_TEST, MEMSET)
     /* STA ($#0, X) */
     cpu_rom[4] = 0x99;
     cpu_rom[5] = 0x00;
-    cpu_rom[6] = 0x10;
+    cpu_rom[6] = 0x04;
 
     /* DEY */
     cpu_rom[7] = 0x88;
@@ -185,8 +186,8 @@ int main (int argc, char **argv)
     testing::InitGoogleTest (&argc, argv);
 
     /* Setting the program start location address (The first byte of the ROM at 0x8000) */
-    cpu_rom[0x7ffc] = 0x00;
-    cpu_rom[0x7ffd] = 0x80;
+    cpu_rom[0xf7fc] = 0x00;
+    cpu_rom[0xf7fd] = 0x08; /* 0xffff - 0x3 -> a b c [d] e f */
 
     //fmt::print ("Executed instructions: {}, Bytes read: {}, Cycles used {}\n", executed, bytes_used, executed_cycles);
     return RUN_ALL_TESTS ();

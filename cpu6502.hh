@@ -36,11 +36,11 @@ void inline LOG (const std::string_view &format,
 constexpr uint16_t 
     /* The start address location for the stack pointer, the stack will growing from 0x1ff to 0x100 */
     START_STACK_ADDRESS = 0x1ff,
-
     /* The base stack address */
     BASE_STACK_ADDRESS = 0x100,
-    /* Default max ram size (can be change normally by the developer) */
-    MAX_RAM_STORAGE = 0x2ff,
+    /* Default max RAM size (can be change normally by the developer) */
+    /* Using only 2KiB of memory (Nothing more) */
+    MAX_RAM_STORAGE = 0x800,
     /* Max rom storage */
     MAX_ROM_STORAGE = 0xffff - MAX_RAM_STORAGE;
 
@@ -163,7 +163,7 @@ private:
     constexpr uint8_t* select_memory (uint16_t address)
     {
         uint8_t *memory{};
-        if (address <= MAX_RAM_STORAGE)
+        if (address < MAX_RAM_STORAGE)
             memory = m_ram;
         else
             memory = m_rom;

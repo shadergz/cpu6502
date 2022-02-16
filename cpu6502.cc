@@ -247,7 +247,7 @@ constexpr std::string_view MEMORY_LOCATION_STR (uint16_t address)
         return "Zero Page";
     if (address <= START_STACK_ADDRESS)
         return "Stack";
-    if (address <= MAX_RAM_STORAGE)
+    if (address < MAX_RAM_STORAGE)
         return "Normal RAM";
     
     return "ROM";
@@ -285,7 +285,7 @@ void cpu6502::write_memory8 ()
     CPU6502_DBG ("Writing {:#x} into {:#x}\n", m_data, m_address);
     m_data &= 0x00ff;
     /* You can't write inside a read only memory */
-    assert (m_address <= MAX_RAM_STORAGE);
+    assert (m_address < MAX_RAM_STORAGE);
 #if USE_6502_CALLBACKS
     m_cpu_write_function (m_address, m_data);
 #else
