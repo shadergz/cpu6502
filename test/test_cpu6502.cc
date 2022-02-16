@@ -154,6 +154,32 @@ TEST (CPU_TEST, MEMSET)
     cpu.step_count (32, executed_cycles);
 }
 
+/*
+void load_program (const char* program_name)
+{
+    FILE *program;
+    size_t size;
+
+    assert (program_name);
+
+    program = fopen (program_name, "rb");
+    assert (program);
+
+    fseek (program, 0, SEEK_END);
+    size = ftell (program);
+    rewind (program);
+    fread (cpu_rom.data (), size, 1, program);
+
+    fclose (program);
+}
+
+TEST (CPU_TEST, DECIMAL_TEST)
+{
+    cpu.reset ();
+    cpu.step_count (100, executed_cycles);
+}
+*/
+
 int main (int argc, char **argv)
 {
     testing::InitGoogleTest (&argc, argv);

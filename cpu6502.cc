@@ -241,7 +241,7 @@ void cpu6502::setf (CPU_status status, bool state)
     }
 }
 
-constexpr std::string_view GET_MEMORY_LOCATION_STR (uint16_t address)
+constexpr std::string_view MEMORY_LOCATION_STR (uint16_t address)
 {
     if (address < BASE_STACK_ADDRESS)
         return "Zero Page";
@@ -262,7 +262,7 @@ void cpu6502::read_memory8 ()
     uint8_t *memory = select_memory (m_address);
     m_data = memory[m_address & MAX_RAM_STORAGE];
 #endif
-    CPU6502_DBG ("{:#x} read from {:#x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
+    CPU6502_DBG ("{:#x} read from {:#x} [{}]\n", m_data, m_address, MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::read_memory16 ()
@@ -292,7 +292,7 @@ void cpu6502::write_memory8 ()
     memory = select_memory (m_address);
     memory[m_address & MAX_RAM_STORAGE] = static_cast<uint8_t> (m_data);
 #endif
-    CPU6502_DBG ("{:#x} writted into {:#x} [{}]\n", m_data, m_address, GET_MEMORY_LOCATION_STR (m_address));
+    CPU6502_DBG ("{:#x} writted into {:#x} [{}]\n", m_data, m_address, MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::write_memory16 ()
@@ -412,7 +412,7 @@ uint8_t cpu6502::cpu_beq ()
 */
 constexpr bool CPU_BIT_OVER (uint16_t x)
 {
-    return (x & (6 << 1));   
+    return (x & (6 << 1));
 }
 
 uint8_t cpu6502::cpu_bit ()

@@ -40,7 +40,7 @@ constexpr uint16_t
     /* The base stack address */
     BASE_STACK_ADDRESS = 0x100,
     /* Default max ram size (can be change normally by the developer) */
-    MAX_RAM_STORAGE = 0x7fff,
+    MAX_RAM_STORAGE = 0x2ff,
     /* Max rom storage */
     MAX_ROM_STORAGE = 0xffff - MAX_RAM_STORAGE;
 
