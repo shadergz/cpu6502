@@ -160,7 +160,7 @@ private:
 
 #if USE_6502_CALLBACKS
 #else
-    constexpr uint8_t* select_memory (uint16_t address)
+    constexpr uint8_t* select_memory (uint16_t address) const
     {
         uint8_t *memory{};
         if (address < MAX_RAM_STORAGE)

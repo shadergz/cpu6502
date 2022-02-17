@@ -292,7 +292,8 @@ void cpu6502::write_memory8 ()
     memory = select_memory (m_address);
     memory[m_address & MAX_RAM_STORAGE] = static_cast<uint8_t> (m_data);
 #endif
-    CPU6502_DBG ("{:#x} writted into {:#x} [{}]\n", m_data, m_address, MEMORY_LOCATION_STR (m_address));
+    CPU6502_DBG ("{:#x} writted into {:#x} [{}]\n", m_data, m_address, 
+        MEMORY_LOCATION_STR (m_address));
 }
 
 void cpu6502::write_memory16 ()
@@ -471,8 +472,8 @@ uint8_t cpu6502::cpu_bpl ()
     return check_pages (branch_address, m_pc) + 1;
 }
 
-/*  Generate a interrupt just like the hardware IRQ, the actual status and the program counter is pushed 
- *  to the stack setted to the next location (PC + 2)
+/*  Generate a interrupt just like the hardware IRQ, the actual status and the 
+ *  program counter is pushed to the stack setted to the next location (PC + 2)
 */
 uint8_t cpu6502::cpu_brk ()
 {
