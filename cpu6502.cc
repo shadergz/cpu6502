@@ -106,7 +106,13 @@ size_t cpu6502::step (size_t &executed_cycles)
     const opcode_info_t *current_instruction;
     uint8_t extra_cycles, cycles_used;
 
-        try {
+    /* Skip if m_skip_cycles is greater than 0 */
+    if (m_skip_cycles > 0) {
+        m_skip_cycles--;
+        return;
+    }
+
+    try {
         /* Fetching the current instruction */
         m_address = m_pc;
         read_memory8 ();
@@ -127,10 +133,10 @@ size_t cpu6502::step (size_t &executed_cycles)
 
         m_cycles_wasted += executed_cycles += cycles_used;
         consumed_bytes = current_instruction->bytes_consumed;            
-        } catch (uint8_t invalid_opcode) {
-            fmt::print (stderr, "Stopped by a invalid instruction opcode {:#x} during the instruction fetch event\n", invalid_opcode);
-            std::terminate ();
-        }
+    } catch (uint8_t invalid_opcode) {
+        fmt::print (stderr, "Stopped by a invalid instruction opcode {:#x} during the instruction fetch event\n", invalid_opcode);
+        std::terminate ();
+    }
 
     return consumed_bytes;
 }

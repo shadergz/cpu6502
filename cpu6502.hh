@@ -127,6 +127,7 @@ public:
     auto get_last_acceded_address () const { return m_address; }
 
     /*
+        TODO: REDO THIS IDEA
     const uint16_t operator[] (CPU_content content) const
     {
         switch (content) {
@@ -258,6 +259,9 @@ private:
 
     /* All cycles wasted will be stored into this variable */
     uint64_t m_cycles_wasted{};
+
+    /* Skip N cycles, this ability is used into emulators/simulators env */
+    uint16_t m_skip_cycles{};
 
     /*  A specif status to determine if the instruction will use the accumulator register 
      *  to retrieve the operand or not
