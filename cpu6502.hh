@@ -111,30 +111,6 @@ public:
     auto get_last_fetched_data () const { return m_data; }
     auto get_last_acceded_address () const { return m_address; }
 
-    /* TODO: REDO THIS IDEA
-    const uint16_t operator[] (CPU_content content) const
-    {
-        switch (content) {
-        case CPU_content::REG_A:
-            return m_a;
-        case CPU_content::REG_X:
-            return m_x;
-        case CPU_content::REG_Y:
-            return m_y;
-        case CPU_content::PC:
-            return m_pc;
-        case CPU_content::SP:
-            return m_s;
-        case CPU_content::DATA:
-            return m_data;
-        case CPU_content::ADDRESS:
-            return m_address;
-        default:
-            return {};
-        }
-    }
-    */
-
 private:
     /* Functions and variables used in the read/write data operations */
 
