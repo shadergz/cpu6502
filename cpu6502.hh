@@ -9,25 +9,7 @@
 #include <string_view>
 #include <cstdarg>
 
-#define DEBUG 1
-
-#if DEBUG
-
-#include <fmt/format.h>
-
-#include <experimental/source_location>
-
-void inline LOG (const std::string_view &format, 
-    const std::experimental::source_location &location = std::experimental::source_location::current())
-{
-    fmt::print (stderr, "{} {} () -> {:03d}+{:02d}: {}", location.file_name (), location.function_name (), location.line (), location.column (), format);
-}
-#define CPU6502_DBG(msg_format, ...)\
-    LOG (fmt::format (msg_format, ##__VA_ARGS__))
-#else
-#define DEBUG_6502(msg_format, ...)\
-    (void)msg_format
-#endif
+#include <fmt/core.h>
 
 /* Set to 1 to enable callback functions */
 #define USE_6502_CALLBACKS 1
@@ -96,7 +78,7 @@ public:
 #if USE_6502_CALLBACKS
     cpu6502 (cpu_read read_function, cpu_write write_function);
 #else
-    cpu6502::cpu6502 (uint8_t *ram, uint8_t *rom);
+    cpu6502 (uint8_t *ram, uint8_t *rom);
 #endif
     ~cpu6502 () = default;
 
@@ -174,6 +156,16 @@ private:
         return memory;
     }
 #endif
+    uint8_t make_branch (bool condition)
+    {
+        uint16_t branch_address;
+        read_memory8 ();
+        if (condition) {
+            branch_address = m_pc + ((int8_t)m_data);
+            m_pc = branch_address;
+        }
+        return check_pages (branch_address, m_pc) + 1;
+    }
     
     /* CPU read/write operations (8 and 16 bit ranges are implemented) */
     void read_memory16 ();
