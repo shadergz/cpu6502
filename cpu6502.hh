@@ -51,9 +51,9 @@ constexpr unsigned CPU_6502_INSTRUCTION_COUNT = 151;
 /* The status after the reset signal */
 constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
 
-enum class IVT_index { ABORT = 0, COP, IRQ_BRK, NMI, RESET };
-enum class CPU_status { CARRY = 0, ZERO, IRQ, DECIMAL, BRK, OVERFLOW, NEGATIVE };
-enum class CPU_content { REG_A = 0, REG_X, REG_Y, PC, SP, DATA, ADDRESS };
+enum class IVT_index { ABORT, COP, IRQ_BRK, NMI, RESET };
+enum class CPU_status { CARRY, ZERO, IRQ, DECIMAL, BRK, OVERFLOW, NEGATIVE };
+enum class CPU_content { REG_A, REG_X, REG_Y, PC, SP, DATA, ADDRESS };
 
 constexpr uint16_t INTERRUPT_VECTOR_TABLE[5][2] = {
     /* ABORT */
