@@ -9,11 +9,12 @@
 #include <string_view>
 #include <cstdarg>
 
-#include <fmt/format.h>
-
 #define DEBUG 1
 
 #if DEBUG
+
+#include <fmt/format.h>
+
 #include <experimental/source_location>
 
 void inline LOG (const std::string_view &format, 
@@ -84,8 +85,10 @@ constexpr uint16_t INTERRUPT_VECTOR_TABLE[5][2] = {
     [0x0000]
 */
 
+#if USE_6502_CALLBACKS
 typedef uint8_t (*cpu_read) (uint16_t);
 typedef void (*cpu_write) (uint16_t, uint8_t);
+#endif
 
 class cpu6502
 {
@@ -126,8 +129,7 @@ public:
     auto get_last_fetched_data () const { return m_data; }
     auto get_last_acceded_address () const { return m_address; }
 
-    /*
-        TODO: REDO THIS IDEA
+    /* TODO: REDO THIS IDEA
     const uint16_t operator[] (CPU_content content) const
     {
         switch (content) {

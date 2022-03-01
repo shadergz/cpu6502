@@ -286,7 +286,10 @@ void cpu6502::read_memory16 ()
 /* Write memory operations */
 void cpu6502::write_memory8 ()
 {
+#if USE_6502_CALLBACKS
+#else
     uint8_t *memory;
+#endif
 
     CPU6502_DBG ("Writing {:#x} into {:#x}\n", m_data, m_address);
     m_data &= 0x00ff;
