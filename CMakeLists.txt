@@ -3,7 +3,7 @@
 project (cpu6502 VERSION 0.0.4)
 
 set (CMAKE_CXX_STANDARD 20)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
+set (CMAKE_CXX_STANDARD_REQUIRED True)
 
 if (MSVC)
 # The Microsoft compiler doesn't include the headers "format", "ranges", "chrono" 
@@ -13,9 +13,8 @@ endif ()
 
 find_package (fmt)
 
-set (CPU6502_SRC 
-	${CMAKE_CURRENT_SOURCE_DIR}/cpu6502.cc
-)
+list (APPEND CPU6502_SRC ${CMAKE_CURRENT_SOURCE_DIR}/cpu6502.cc)
+list (APPEND CPU6502_HEADERS_ONLY ${CMAKE_CURRENT_SOURCE_DIR}/cpu6502.hh)
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 

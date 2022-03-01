@@ -12,6 +12,7 @@
 #include <fmt/format.h>
 
 #define DEBUG 1
+
 #if DEBUG
 #include <experimental/source_location>
 
