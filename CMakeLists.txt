@@ -18,4 +18,7 @@ list (APPEND CPU6502_HEADERS_ONLY ${CMAKE_CURRENT_SOURCE_DIR}/cpu6502.hh)
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
+add_library (lib6502 ${CPU6502_SRC})
+target_link_libraries (lib6502 fmt::fmt)
+
 add_subdirectory (test)

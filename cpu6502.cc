@@ -109,7 +109,7 @@ size_t cpu6502::step (size_t &executed_cycles)
     /* Skip if m_skip_cycles is greater than 0 */
     if (m_skip_cycles > 0) {
         m_skip_cycles--;
-        return;
+        return 0;
     }
 
     try {
