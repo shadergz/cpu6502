@@ -181,7 +181,7 @@ TEST (CPU_TEST, DECIMAL_TEST)
 }
 */
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
 

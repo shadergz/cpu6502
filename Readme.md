@@ -2,6 +2,9 @@
 
 A 6502 microprocessor implementation in modern C++ 20, implemented with Thread-Safety in mind
 
+![Image](assets/table.png)
+> Logical CPU Instruction with Operations Mode Table
+
 ## How to build the test program
 
 Just type:

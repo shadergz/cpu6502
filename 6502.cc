@@ -17,6 +17,7 @@
 cpu6502::cpu6502(cpu_read read_function, cpu_write write_function)
 {
     assert (read_function && write_function);
+    
     m_cpu_read_function = read_function;
     m_cpu_write_function = write_function;
 
@@ -317,8 +318,10 @@ void cpu6502::write_memory8()
 void cpu6502::write_memory16()
 {
     write_memory8();
+    
     m_address++;
     m_data >>= 8;
+    
     write_memory8();
 }
 
@@ -331,13 +334,16 @@ uint8_t cpu6502::cpu_adc()
     uint16_t value = m_a + m_data + getf(CPU_status::CARRY);
     setf(CPU_status::ZERO, CHECK_ZERO(m_a));
     
-    if (getf(CPU_status::DECIMAL)) {
+    if (getf(CPU_status::DECIMAL)) 
+    {
         if (((m_a & 0x0f) + (m_data & 0x0f) + getf(CPU_status::CARRY)) > 9)
             value += 6;
         if (value > 0x99)
             value += 96;
         setf(CPU_status::CARRY, (value > 0x99));
-    } else {
+    } 
+    else
+    {
         setf(CPU_status::CARRY, (CHECK_CARRY(value, 0)));
     }
 
@@ -345,6 +351,7 @@ uint8_t cpu6502::cpu_adc()
     setf(CPU_status::OVERFLOW, CHECK_OVERFLOW(m_a, m_data, value));
     
     m_a = value & 0xff;
+
     return check_pages(m_address, m_pc);
 }
 
