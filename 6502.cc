@@ -1,5 +1,5 @@
 /*
- *  Source code written by Gabriel Correia
+ *  Source code wrote by Gabriel Correia
 */
 
 #include <iostream>
@@ -11,7 +11,7 @@
 #define FETCH_ADDRESS()\
     (this->*m_load_address) ()
 #define EXEC_OPERATION(func)\
-    (this->*func) ()
+    (this->*func)()
 
 #if USE_6502_CALLBACKS
 cpu6502::cpu6502(cpu_read read_function, cpu_write write_function)

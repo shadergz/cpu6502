@@ -1,12 +1,13 @@
 /*
- *  Source code written by Gabriel Correia
+ *  Source code wrote by Gabriel Correia
 */
 
 #pragma once
 
 #include <array>
-#include <cstdint>
 #include <string_view>
+
+#include <cstdint>
 #include <cstdarg>
 
 #include <fmt/core.h>
@@ -34,9 +35,18 @@ constexpr unsigned CPU_6502_INSTRUCTION_COUNT = 151;
 /* The status after the reset signal */
 constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
 
-enum class IVT_index { ABORT, COP, IRQ_BRK, NMI, RESET };
-enum class CPU_status { CARRY, ZERO, IRQ, DECIMAL, BRK, OVERFLOW, NEGATIVE };
-enum class CPU_content { REG_A, REG_X, REG_Y, PC, SP, DATA, ADDRESS };
+enum class IVT_index
+{ 
+    ABORT, COP, IRQ_BRK, NMI, RESET
+};
+enum class CPU_status
+{
+    CARRY, ZERO, IRQ, DECIMAL, BRK, OVERFLOW, NEGATIVE
+};
+enum class CPU_content
+{
+    REG_A, REG_X, REG_Y, PC, SP, DATA, ADDRESS
+};
 
 constexpr uint16_t INTERRUPT_VECTOR_TABLE[5][2] = {
     /* ABORT */
@@ -76,40 +86,40 @@ class cpu6502
 {
 public:
 #if USE_6502_CALLBACKS
-    cpu6502 (cpu_read read_function, cpu_write write_function);
+    cpu6502(cpu_read read_function, cpu_write write_function);
 #else
-    cpu6502 (uint8_t *ram, uint8_t *rom);
+    cpu6502(uint8_t *ram, uint8_t *rom);
 #endif
-    ~cpu6502 () = default;
+    ~cpu6502() = default;
 
-    void reset ();
-    void printcs ();
+    void reset();
+    void printcs();
 
     /* Interrupt request functions */
-    void nmi ();
-    void irq ();
+    void nmi();
+    void irq();
 
     /* ABORT is raised when a invalid opcode has been detected */
-    void abort ();
+    void abort();
 
     /* Execute cycles_count cycles */
-    std::pair<size_t, size_t> clock (size_t cycles_count, size_t &executed_cycles);
+    std::pair<size_t, size_t> clock(size_t cycles_count, size_t &executed_cycles);
     size_t step (size_t &executed_cycles);
-    std::pair<size_t, size_t> step_count (size_t cycles_count, size_t &executed_cycles);
+    std::pair<size_t, size_t> step_count(size_t cycles_count, size_t &executed_cycles);
 
     /* Processor status manipulation functions */
-    bool getf (CPU_status status) const;
-    void setf (CPU_status status, bool state);
+    bool getf(const CPU_status status) const;
+    void setf(const CPU_status status, const bool state);
 
     /* Some get functions, commoly used into unit test code section */
 
-    auto get_register_a () const { return m_a; }
-    auto get_register_x () const { return m_x; }
-    auto get_register_y () const { return m_y; }
-    auto get_register_pc () const { return m_pc; }
-    auto get_register_s () const { return m_s; }
-    auto get_last_fetched_data () const { return m_data; }
-    auto get_last_acceded_address () const { return m_address; }
+    auto get_register_a() const{ return m_a; }
+    auto get_register_x() const { return m_x; }
+    auto get_register_y() const { return m_y; }
+    auto get_register_pc() const { return m_pc; }
+    auto get_register_s() const { return m_s; }
+    auto get_last_fetched_data() const { return m_data; }
+    auto get_last_acceded_address() const { return m_address; }
 
 private:
     /* Functions and variables used in the read/write data operations */
@@ -122,7 +132,7 @@ private:
 
 #if USE_6502_CALLBACKS
 #else
-    constexpr uint8_t* select_memory (uint16_t address) const
+    constexpr uint8_t* select_memory(const uint16_t address) const
     {
         uint8_t *memory{};
         if (address < MAX_RAM_STORAGE)
@@ -132,29 +142,30 @@ private:
         return memory;
     }
 #endif
-    uint8_t make_branch (bool condition)
+    uint8_t make_branch(const bool condition)
     {
         uint16_t branch_address;
-        read_memory8 ();
-        if (condition) {
+        read_memory8();
+        if (condition) 
+        {
             branch_address = m_pc + ((int8_t)m_data);
             m_pc = branch_address;
         }
-        return check_pages (branch_address, m_pc) + 1;
+        return check_pages(branch_address, m_pc) + 1;
     }
     
     /* CPU read/write operations (8 and 16 bit ranges are implemented) */
-    void read_memory16 ();
-    void read_memory8 ();
-    void write_memory8 ();
-    void write_memory16 ();
+    void read_memory16();
+    void read_memory8();
+    void write_memory8();
+    void write_memory16();
 
 #if USE_6502_CALLBACKS
     cpu_read m_cpu_read_function{};
     cpu_write m_cpu_write_function{};
 #endif
 
-    bool check_pages (uint16_t first, uint16_t second)
+    bool check_pages(const uint16_t first, const uint16_t second)
     {
         /* 0x`00´ff ONE PAGE */ 
         /* 0x`01´00 ANOTHER PAGE */
@@ -163,32 +174,32 @@ private:
         return false;
     }
 
-    void push8 ()
+    void push8()
     {
         m_address = --m_s | BASE_STACK_ADDRESS;
         /* "Allocating" memory into the stack */
         /* Writting data into it */
-        write_memory8 ();
+        write_memory8();
     }
     
-    void push16 ()
+    void push16()
     {
-        push8 ();
+        push8();
         m_data >>= 8;
-        push8 ();
+        push8();
     }
 
-    void pop8 ()
+    void pop8()
     {
         /* Pop a 8 bit value from the stack */
         m_address = m_s++ | BASE_STACK_ADDRESS;
-        read_memory8 ();
+        read_memory8();
     }
 
     void pop16 ()
     {
         m_address = m_s++;
-        read_memory16 ();
+        read_memory16();
         m_s++;
     }
 
@@ -206,8 +217,10 @@ private:
 #endif
 
     /* CPU status register */
-    union {
-        struct {
+    union 
+    {
+        struct 
+        {
             unsigned carry: 1;
             unsigned zero: 1;
             unsigned irq: 1;
@@ -241,92 +254,93 @@ private:
     /* Setted if the current operation can promove a cross a page */
     bool m_can_page_cross{};
     /* Helper functions with the addressing processor specs */
-    typedef void (cpu6502::*loadaddr_t) ();
+    typedef void (cpu6502::*loadaddr_t)();
     loadaddr_t m_load_address{};
 
 #pragma region
     /* Instruction operations */
-    uint8_t cpu_adc ();
-    uint8_t cpu_and ();
-    uint8_t cpu_asl ();
-    uint8_t cpu_bcc ();
-    uint8_t cpu_bcs ();
-    uint8_t cpu_beq ();
-    uint8_t cpu_bit ();
-    uint8_t cpu_bmi ();
-    uint8_t cpu_bne ();
-    uint8_t cpu_bpl ();
-    uint8_t cpu_brk ();
-    uint8_t cpu_bvc ();
-    uint8_t cpu_bvs ();
-    uint8_t cpu_clc ();
-    uint8_t cpu_cld ();
-    uint8_t cpu_cli ();
-    uint8_t cpu_clv ();
-    uint8_t cpu_cmp ();
-    uint8_t cpu_cpx ();
-    uint8_t cpu_cpy ();
-    uint8_t cpu_dec ();
-    uint8_t cpu_dex ();
-    uint8_t cpu_dey ();
-    uint8_t cpu_eor ();
-    uint8_t cpu_inc ();
-    uint8_t cpu_inx ();
-    uint8_t cpu_iny ();
-    uint8_t cpu_jmp ();
-    uint8_t cpu_jsr ();
-    uint8_t cpu_lda ();
-    uint8_t cpu_ldx ();
-    uint8_t cpu_ldy ();
-    uint8_t cpu_lsr ();
-    uint8_t cpu_nop ();
-    uint8_t cpu_ora ();
-    uint8_t cpu_pha ();
-    uint8_t cpu_php ();
-    uint8_t cpu_pla ();
-    uint8_t cpu_plp ();
-    uint8_t cpu_rol ();
-    uint8_t cpu_ror ();
-    uint8_t cpu_rti ();
-    uint8_t cpu_rts ();
-    uint8_t cpu_sbc ();
-    uint8_t cpu_sec ();
-    uint8_t cpu_sed ();
-    uint8_t cpu_sei ();
-    uint8_t cpu_sta ();
-    uint8_t cpu_stx ();
-    uint8_t cpu_sty ();
-    uint8_t cpu_tax ();
-    uint8_t cpu_tay ();
-    uint8_t cpu_tsx ();
-    uint8_t cpu_txa ();
-    uint8_t cpu_txs ();
-    uint8_t cpu_tya ();
+    uint8_t cpu_adc();
+    uint8_t cpu_and();
+    uint8_t cpu_asl();
+    uint8_t cpu_bcc();
+    uint8_t cpu_bcs();
+    uint8_t cpu_beq();
+    uint8_t cpu_bit();
+    uint8_t cpu_bmi();
+    uint8_t cpu_bne();
+    uint8_t cpu_bpl();
+    uint8_t cpu_brk();
+    uint8_t cpu_bvc();
+    uint8_t cpu_bvs();
+    uint8_t cpu_clc();
+    uint8_t cpu_cld();
+    uint8_t cpu_cli();
+    uint8_t cpu_clv();
+    uint8_t cpu_cmp();
+    uint8_t cpu_cpx();
+    uint8_t cpu_cpy();
+    uint8_t cpu_dec();
+    uint8_t cpu_dex();
+    uint8_t cpu_dey();
+    uint8_t cpu_eor();
+    uint8_t cpu_inc();
+    uint8_t cpu_inx();
+    uint8_t cpu_iny();
+    uint8_t cpu_jmp();
+    uint8_t cpu_jsr();
+    uint8_t cpu_lda();
+    uint8_t cpu_ldx();
+    uint8_t cpu_ldy();
+    uint8_t cpu_lsr();
+    uint8_t cpu_nop();
+    uint8_t cpu_ora();
+    uint8_t cpu_pha();
+    uint8_t cpu_php();
+    uint8_t cpu_pla();
+    uint8_t cpu_plp();
+    uint8_t cpu_rol();
+    uint8_t cpu_ror();
+    uint8_t cpu_rti();
+    uint8_t cpu_rts();
+    uint8_t cpu_sbc();
+    uint8_t cpu_sec();
+    uint8_t cpu_sed();
+    uint8_t cpu_sei();
+    uint8_t cpu_sta();
+    uint8_t cpu_stx();
+    uint8_t cpu_sty();
+    uint8_t cpu_tax();
+    uint8_t cpu_tay();
+    uint8_t cpu_tsx();
+    uint8_t cpu_txa();
+    uint8_t cpu_txs();
+    uint8_t cpu_tya();
 
     /* Addressing modes operations */
-    void mem_none ();
-    void mem_a ();
-    void mem_abs ();
-    void mem_absx ();
-    void mem_absy ();
-    void mem_imm ();
-    void mem_impl ();
-    void mem_ind ();
-    void mem_indx ();
-    void mem_indy ();
-    void mem_rel ();
-    void mem_zp ();
-    void mem_zpx ();
-    void mem_zpy ();
+    void mem_none();
+    void mem_a();
+    void mem_abs();
+    void mem_absx();
+    void mem_absy();
+    void mem_imm();
+    void mem_impl();
+    void mem_ind();
+    void mem_indx();
+    void mem_indy();
+    void mem_rel();
+    void mem_zp();
+    void mem_zpx();
+    void mem_zpy();
 
 #pragma endregion "CPU instructions definition"
 
 #pragma region
-    typedef struct opcode_info_st {
+    typedef struct opcode_info_st 
+    {
         /* Referenced function to be executed */
-        uint8_t (cpu6502::* instruction) ();
+        uint8_t (cpu6502::* instruction)();
         /* The addressing mode needed to be performed until the operation call */
-        void (cpu6502::* addressing) ();
+        void (cpu6502::* addressing)();
         /* The count of cycles wasted to execute the current instruction */
         uint8_t cycles_wasted;
         /* The switch to advice the CPU that the current instruction can extrapolate the wasted cycles */
@@ -337,7 +351,8 @@ private:
 
     using cpu = cpu6502;
     
-    std::array<opcode_info_t, 0x100> const m_cpu_isa {{
+    std::array<opcode_info_t, 0x100> const
+        m_cpu_isa {{
         {&cpu::cpu_brk, &cpu::mem_impl, 7, 0, 1}, {&cpu::cpu_ora, &cpu::mem_indx, 6, 0, 2}, {}, {}, {},
         {&cpu::cpu_ora, &cpu::mem_zp,   3, 0, 2}, {&cpu::cpu_asl, &cpu::mem_zpx,  5, 0, 2}, {},
         {&cpu::cpu_php, &cpu::mem_impl, 3, 0, 1}, {&cpu::cpu_ora, &cpu::mem_imm,  2, 0, 2},
