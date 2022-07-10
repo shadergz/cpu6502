@@ -112,10 +112,10 @@ The step method is used to execute only one instruction from the current CPU sta
 ~~~c++
 size_t cycles_wasted();
 size_t cpu6502::step(&cycles_wasted);
-std::pair<size_t, size_t>step_count(size_t cycles_count, size_t &executed_cycles);
+std::pair<size_t, size_t> step_count(size_t cycles_count, size_t &executed_cycles);
 ~~~
 
-Some get functions has been implemented to help into the debug or something else like "stack trace"
+Some get functions has been implemented for help into the debugging or something else like "stack trace"
 
 ~~~c++
 auto get_register_a();

@@ -102,15 +102,21 @@ TEST(CPU_TEST, PROGRAM)
 #if TEST_CYCLES_ACCURATE
 
     EXPECT_EQ(executed_cycles, 9);
+
 #endif
     
     /* INX ; 2 C */
     CPU_ROM[12] = 0xe8;
+
     cpu.step_count(1, executed_cycles);
+
     EXPECT_EQ(cpu.get_register_x(), (0x50 | 0x10) + 1);
+
     /* TAX ; 2 */
     CPU_ROM[13] = 0xaa;
+
     cpu.step_count(1, executed_cycles);
+    
     EXPECT_EQ(cpu.get_register_a(), cpu.get_register_x());
 
 #undef TEST_CYCLES_ACCURATE
