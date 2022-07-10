@@ -67,7 +67,7 @@ typedef uint8_t (*cpu_read) (uint16_t);
 typedef void (*cpu_write) (uint16_t, uint8_t);
 ~~~
 
-## Usage examples
+## Usage example
 
 > Simple example of callback functions
 
@@ -110,8 +110,7 @@ std::pair<size_t, size_t> cpu6502::clock(size_t cycles_count, size_t &executed_c
 The step method is used to execute only one instruction from the current CPU state, other way the step_count is used to execute one or more instructions and works like the clock method
 
 ~~~c++
-size_t cycles_wasted();
-size_t cpu6502::step(&cycles_wasted);
+size_t cpu6502::step(size_t &cycles_wasted);
 std::pair<size_t, size_t> step_count(size_t cycles_count, size_t &executed_cycles);
 ~~~
 

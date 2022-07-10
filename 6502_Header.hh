@@ -246,8 +246,8 @@ private:
     /* Skip N cycles, this ability is used into emulators/simulators env */
     uint16_t m_skip_cycles{};
 
-    /*  A specif status to determine if the instruction will use the accumulator register 
-     *  to retrieve the operand or not
+    /*  A specific status for determine if the instruction will use the accumulator register 
+     *  as operand or not
     */
     bool m_use_accumulator{};
 
@@ -255,6 +255,7 @@ private:
     bool m_can_page_cross{};
     /* Helper functions with the addressing processor specs */
     typedef void (cpu6502::*loadaddr_t)();
+    
     loadaddr_t m_load_address{};
 
 #pragma region
