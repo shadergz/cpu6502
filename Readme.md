@@ -3,7 +3,7 @@
 A 6502 microprocessor implementation in modern C++ 20, implemented with Thread-Safety in mind
 
 ![Image](assets/table.png)
-> Logical CPU Instruction with Operations Mode Table
+> Table: Logical CPU Instructions with Operations Modes
 
 ## How to build the test program
 
@@ -77,14 +77,14 @@ static std::array<uint8_t, MAX_ROM_STORAGE> CPU_ROM{};
 
 /* CPU callback functions definition */
 
-uint8_t cpu_6502_read(uint16_t address)
+uint8_t cpu_6502_read(const uint16_t address)
 {
     if (address <= MAX_RAM_STORAGE)
         return CPU_RAM[address];
     return CPU_ROM[address & MAX_RAM_STORAGE];
 }
 
-void cpu_6502_write(uint16_t address, uint8_t data)
+void cpu_6502_write(const uint16_t address, const uint8_t data)
 {
     CPU_RAM[address & MAX_RAM_STORAGE] = data;
 }

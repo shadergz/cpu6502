@@ -196,7 +196,7 @@ private:
         read_memory8();
     }
 
-    void pop16 ()
+    void pop16()
     {
         m_address = m_s++;
         read_memory16();

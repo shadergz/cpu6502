@@ -9,7 +9,7 @@
 #include <6502_Header.hh>
 
 #define FETCH_ADDRESS()\
-    (this->*m_load_address) ()
+    (this->*m_load_address)()
 #define EXEC_OPERATION(func)\
     (this->*func)()
 
@@ -49,7 +49,7 @@ void cpu6502::reset()
     m_p.status = RESET_STATUS_SIGNAL;
 
     m_s = static_cast<uint8_t>(START_STACK_ADDRESS);
-    m_address = INTERRUPT_VECTOR_TABLE[static_cast<int>(IVT_index::RESET)][0];
+    m_address = INTERRUPT_VECTOR_TABLE[static_cast<uint16_t>(IVT_index::RESET)][0];
     read_memory16();
     m_pc = m_data;
 
@@ -68,7 +68,7 @@ void cpu6502::irq()
     m_data = m_s;
     push8();
     setf(CPU_status::IRQ, true);
-    m_address = INTERRUPT_VECTOR_TABLE[static_cast<int>(IVT_index::IRQ_BRK)][0];
+    m_address = INTERRUPT_VECTOR_TABLE[static_cast<uint16_t>(IVT_index::IRQ_BRK)][0];
     read_memory16();
     m_pc = m_data;
 }
@@ -82,7 +82,7 @@ void cpu6502::nmi()
     m_data = m_s;
     push8();
     setf(CPU_status::IRQ, true);
-    m_data = INTERRUPT_VECTOR_TABLE[static_cast<int> (IVT_index::NMI)][0];
+    m_data = INTERRUPT_VECTOR_TABLE[static_cast<uint16_t>(IVT_index::NMI)][0];
     read_memory16();
     m_pc = m_data;
 }
@@ -272,7 +272,7 @@ constexpr std::string_view MEMORY_LOCATION_STR(const uint16_t address)
     if (address < MAX_RAM_STORAGE)
         return "Normal RAM";
     
-    return "ROM";
+    return "ROM Storage";
 }
 
 /* Read memory operation routines */
@@ -330,7 +330,7 @@ void cpu6502::write_memory16()
 /* Add to the register A, a memory value and the carry status */
 uint8_t cpu6502::cpu_adc()
 {
-    read_memory8 ();
+    read_memory8();
     uint16_t value = m_a + m_data + getf(CPU_status::CARRY);
     setf(CPU_status::ZERO, CHECK_ZERO(m_a));
     
@@ -377,9 +377,9 @@ uint8_t cpu6502::cpu_asl()
     old_value = m_data;
 
     m_data <<= 1;
-    setf (CPU_status::NEGATIVE, CHECK_NEGATIVE(m_data));
-    setf (CPU_status::ZERO, CHECK_ZERO(m_data));
-    setf (CPU_status::CARRY, CHECK_CARRY(m_data, old_value));
+    setf(CPU_status::NEGATIVE, CHECK_NEGATIVE(m_data));
+    setf(CPU_status::ZERO, CHECK_ZERO(m_data));
+    setf(CPU_status::CARRY, CHECK_CARRY(m_data, old_value));
     write_memory8();
 
     return 0;
@@ -529,9 +529,8 @@ uint8_t cpu6502::cpu_cmp()
 /* Comparing a memory value with the X index register */
 uint8_t cpu6502::cpu_cpx()
 {
-    uint16_t value;
-    read_memory8 ();
-    value = static_cast<uint8_t> (m_data) - m_x;
+    read_memory8();
+    const uint16_t value = static_cast<uint8_t>(m_data) - m_x;
 
     setf(CPU_status::ZERO, CHECK_ZERO(value));
     setf(CPU_status::CARRY, CHECK_ZERO(value));
@@ -542,9 +541,8 @@ uint8_t cpu6502::cpu_cpx()
 /* Comparing a memory value with the Y index register */
 uint8_t cpu6502::cpu_cpy()
 {
-    uint16_t value;
     read_memory8();
-    value = static_cast<uint8_t>(m_data) - m_y;
+    const uint16_t value = static_cast<uint8_t>(m_data) - m_y;
 
     setf(CPU_status::ZERO, CHECK_ZERO(value));
     setf(CPU_status::CARRY, CHECK_ZERO(value));
