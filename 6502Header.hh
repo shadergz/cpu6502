@@ -15,11 +15,11 @@
 /* Set to 1 to enable callback functions */
 #define USE_6502_CALLBACKS 1
 
-/* Set to 1 to enable the internal ram memory (You don't will need to provide one into the constructor) */
+/* Set to 1 to enable the internal ram memory (You won't need to provide one into the constructor) */
 #define USE_INTERNAL_RAM 0
 
 constexpr uint16_t 
-    /* The start address location for the stack pointer, the stack will growing from 0x1ff to 0x100 */
+    /* The start address location for the stack pointer, the stack will grow from 0x1ff to 0x100 */
     START_STACK_ADDRESS = 0x1ff,
     /* The base stack address */
     BASE_STACK_ADDRESS = 0x100,
@@ -99,7 +99,7 @@ public:
     void nmi();
     void irq();
 
-    /* ABORT is raised when a invalid opcode has been detected */
+    /* ABORT is raised when an invalid opcode has been detected */
     void abort();
 
     /* Execute cycles_count cycles */
@@ -191,7 +191,7 @@ private:
 
     void pop8()
     {
-        /* Pop a 8 bit value from the stack */
+        /* Pop an 8 bit value from the stack */
         m_address = m_s++ | BASE_STACK_ADDRESS;
         read_memory8();
     }

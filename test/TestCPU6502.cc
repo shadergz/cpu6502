@@ -135,7 +135,6 @@ TEST(CPU_TEST, MEMSET)
             DEY
             BPL LOOP_01
     */
-
     cpu.reset();
     /* LDA #$0xff */
     CPU_ROM[0] = 0xa9;
@@ -187,7 +186,7 @@ TEST (CPU_TEST, DECIMAL_TEST)
 }
 */
 
-int main(int argc, char **argv)
+int main()
 {
     testing::InitGoogleTest(&argc, argv);
 

@@ -6,7 +6,7 @@
 #include <cassert>
 #include <utility>
 
-#include <6502_Header.hh>
+#include <6502Header.hh>
 
 #define FETCH_ADDRESS()\
     (this->*m_load_address)()

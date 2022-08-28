@@ -15,7 +15,7 @@ include(GoogleTest)
 
 find_package(fmt)
 
-add_executable(test_CPU6502 test_CPU6502.cc ${CPU6502_SRC})
+add_executable(test_CPU6502 TestCPU6502.cc ${CPU6502_SRC})
 
 target_link_libraries(test_CPU6502 fmt::fmt gtest_main)
 
