@@ -36,7 +36,7 @@ constexpr unsigned CPU_6502_INSTRUCTION_COUNT = 151;
 constexpr uint8_t RESET_STATUS_SIGNAL = 0xfb;
 
 enum class IVT_index
-{ 
+{
     ABORT, COP, IRQ_BRK, NMI, RESET
 };
 enum class CPU_status
@@ -62,7 +62,7 @@ constexpr uint16_t INTERRUPT_VECTOR_TABLE[5][2] = {
 };
 
 /*
-6502 Memory layout
+    6502 Memory layout
     [END ROM]
     [0xffff]
     |INT VECTORS|
@@ -104,7 +104,7 @@ public:
 
     /* Execute cycles_count cycles */
     std::pair<size_t, size_t> clock(size_t cycles_count, size_t &executed_cycles);
-    size_t step (size_t &executed_cycles);
+    size_t step(size_t &executed_cycles);
     std::pair<size_t, size_t> step_count(size_t cycles_count, size_t &executed_cycles);
 
     /* Processor status manipulation functions */

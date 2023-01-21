@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.16)
 
-project(CPUMos6502 VERSION 0.0.4)
+project(CPUMOS VERSION 0.0.4)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,12 +13,14 @@ endif()
 
 find_package(fmt)
 
-list(APPEND CPU6502_SRC ${CMAKE_CURRENT_SOURCE_DIR}/6502.cc)
-list(APPEND CPU6502_HEADERS_ONLY ${CMAKE_CURRENT_SOURCE_DIR}/6502Header.hh)
+list(APPEND CPU6502_SRC ${CMAKE_CURRENT_SOURCE_DIR}/Mos6502.cpp)
+list(APPEND CPU6502_HEADERS_ONLY ${CMAKE_CURRENT_SOURCE_DIR}/MosHeader.h)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(lib6502 STATIC ${CPU6502_SRC})
-target_link_libraries(lib6502 fmt::fmt)
+add_library(core6502 STATIC)
+target_sources(core6502 PRIVATE ${CPU6502_SRC})
+target_link_libraries(core6502 fmt::fmt)
 
 add_subdirectory(test)
+

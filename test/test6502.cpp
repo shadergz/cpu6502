@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-#include <6502_Header.hh>
+#include <MosHeader.h>
 
 static std::array<uint8_t, MAX_RAM_STORAGE> CPU_RAM{};
 static std::array<uint8_t, MAX_ROM_STORAGE> CPU_ROM{};
@@ -186,7 +186,7 @@ TEST (CPU_TEST, DECIMAL_TEST)
 }
 */
 
-int main()
+int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
 

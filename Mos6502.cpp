@@ -6,7 +6,7 @@
 #include <cassert>
 #include <utility>
 
-#include <6502Header.hh>
+#include <MosHeader.h>
 
 #define FETCH_ADDRESS()\
     (this->*m_load_address)()
@@ -16,7 +16,7 @@
 #if USE_6502_CALLBACKS
 cpu6502::cpu6502(cpu_read read_function, cpu_write write_function)
 {
-    assert (read_function && write_function);
+    assert(read_function && write_function);
     
     m_cpu_read_function = read_function;
     m_cpu_write_function = write_function;
@@ -97,7 +97,8 @@ std::pair<size_t, size_t> cpu6502::clock(size_t cycles_count, size_t &executed_c
     size_t consumed_bytes{}, executed{};
     executed_cycles = 0;
 
-    for (; cycles_count > executed_cycles; executed++) {
+    for (; cycles_count > executed_cycles; executed++)
+    {
         consumed_bytes += step (executed_cycles);
         /* Ensuring that the CPU hasn't performed more cycles that has been requested */
         assert (cycles_count >= executed_cycles);
@@ -161,6 +162,7 @@ std::pair<size_t, size_t> cpu6502::step_count(size_t execute, size_t &executed_c
     executed_cycles = 0;
     for (; execute-- > 0; executed++)
         consumed_bytes += step(executed_cycles);
+    
     return {executed, consumed_bytes};
 }
 
@@ -301,7 +303,7 @@ void cpu6502::write_memory8()
 {
     m_data &= 0x00ff;
     /* You can't write inside a read only memory */
-    assert (m_address < MAX_RAM_STORAGE);
+    assert(m_address < MAX_RAM_STORAGE);
 
 #if USE_6502_CALLBACKS
     
@@ -309,8 +311,8 @@ void cpu6502::write_memory8()
 
 #else
     
-    uint8_t *memory = select_memory (m_address);
-    memory[m_address & MAX_RAM_STORAGE] = static_cast<uint8_t> (m_data);
+    uint8_t *memory = select_memory(m_address);
+    memory[m_address & MAX_RAM_STORAGE] = static_cast<uint8_t>(m_data);
 
 #endif
 }
@@ -635,8 +637,8 @@ uint8_t cpu6502::cpu_jmp()
 uint8_t cpu6502::cpu_jsr()
 {
     m_data = m_pc;
-    push16 ();
-    read_memory16 ();
+    push16();
+    read_memory16();
     m_pc = m_data;
     return 0;
 }
@@ -644,11 +646,11 @@ uint8_t cpu6502::cpu_jsr()
 /* Loading the A register from a memory value */
 uint8_t cpu6502::cpu_lda()
 {
-    read_memory8 ();
+    read_memory8();
     m_a = static_cast<uint8_t>(m_data);
 
-    setf (CPU_status::NEGATIVE, CHECK_NEGATIVE(m_a));
-    setf (CPU_status::ZERO, CHECK_ZERO(m_a));
+    setf(CPU_status::NEGATIVE, CHECK_NEGATIVE(m_a));
+    setf(CPU_status::ZERO, CHECK_ZERO(m_a));
     return check_pages(m_address, m_pc);
 
 }
@@ -668,8 +670,8 @@ uint8_t cpu6502::cpu_ldy()
 {
     read_memory8();
     m_y = static_cast<uint8_t>(m_data);
-    setf (CPU_status::NEGATIVE, CHECK_NEGATIVE(m_y));
-    setf (CPU_status::ZERO, CHECK_ZERO(m_y));
+    setf(CPU_status::NEGATIVE, CHECK_NEGATIVE(m_y));
+    setf(CPU_status::ZERO, CHECK_ZERO(m_y));
     return check_pages(m_address, m_pc);
 }
 
@@ -684,9 +686,9 @@ uint8_t cpu6502::cpu_lsr()
     const uint16_t old_value = m_data;
 
     m_data >>= 1;
-    setf (CPU_status::NEGATIVE, CHECK_NEGATIVE(m_data));
-    setf (CPU_status::ZERO, CHECK_ZERO(m_data));
-    setf (CPU_status::CARRY, CHECK_CARRY(m_data, old_value));
+    setf(CPU_status::NEGATIVE, CHECK_NEGATIVE(m_data));
+    setf(CPU_status::ZERO, CHECK_ZERO(m_data));
+    setf(CPU_status::CARRY, CHECK_CARRY(m_data, old_value));
 
     if (m_use_accumulator)
         m_a = static_cast<uint8_t>(m_data);
@@ -784,7 +786,7 @@ uint8_t cpu6502::cpu_ror()
     if (m_use_accumulator)
         m_data = m_a;
     else
-        read_memory8 ();
+        read_memory8();
     const bool carry_bit = m_data & 1;
     m_data |= carry_bit << 7;
     if (m_use_accumulator)
@@ -1065,5 +1067,5 @@ void cpu6502::mem_zpy()
     ++m_pc;
 }
 
-#pragma endregion "Instruction operation"
+#pragma endregion "Instruction operations"
 
