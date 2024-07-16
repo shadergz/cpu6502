@@ -1,6 +1,6 @@
-# CPUmos6502-MT-Safe
+# cpu6502
 
-A 6502 microprocessor implementation in modern C++ 20, implemented with Thread-Safety in mind
+A 6502 microprocessor implementation in modern C++ 20
 
 ![Image](assets/table.png)
 > Table: Logical CPU Instructions with Operations Modes
